@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pixel-meow</title>
   <link rel="icon" href="./Asset/IconFit.png" type="image/png">
+  <!-- GIF 인코더 라이브러리 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
   <style>
     * {
@@ -22,6 +23,7 @@
     }
     input[type="number"] {
       appearance: textfield;
+      -moz-appearance: textfield;
     }
 
     body {
@@ -256,6 +258,7 @@
       align-items: center;
       cursor: pointer;
       font-size: 17px;
+      margin-bottom: 5px;
     }
 
     .tool-btn:hover { background: #505050; }
@@ -271,21 +274,15 @@
       margin: 2px 0;
     }
 
-    .color-section {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-
     .color-picker-wrapper {
       position: relative;
-      width: 40px;
-      height: 40px;
+      width: 32px;
+      height: 32px;
       border-radius: 6px;
       overflow: hidden;
       border: 2px solid #666;
       cursor: pointer;
+      flex-shrink: 0;
     }
 
     input[type="color"] {
@@ -300,16 +297,18 @@
       cursor: pointer;
     }
 
+    /* 상단 리본 내 색조 팔레트를 2열 x 5행으로 가로 정렬 */
     .palette-10steps {
       display: grid;
-      grid-template-columns: repeat(2, 22px);
-      gap: 3px;
+      grid-template-columns: repeat(5, 18px);
+      grid-template-rows: repeat(2, 18px);
+      gap: 2px;
     }
 
     .palette-swatch {
-      width: 22px;
-      height: 22px;
-      border-radius: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 2px;
       border: 1px solid #555;
       cursor: pointer;
     }
@@ -476,7 +475,7 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      margin:0 40px 0 40px;
+      margin: 0 20px 0 20px;
     }
 
     .panel-toggle-btn {
@@ -665,14 +664,6 @@
       image-rendering: pixelated;
     }
 
-    .color-section .input-group {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-    }
-
     #alphaInput {
       accent-color: #e9bd0c;
       cursor: pointer;
@@ -738,7 +729,6 @@
 <body>
 
   <header>
-    <!-- 아이콘 클릭 시 새로고침 안내 적용 -->
     <img src="./Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
     <div class="header-group">
       <span class="header-group-title">캔버스 설정</span>
@@ -786,6 +776,24 @@
     </div>
     <div class="header-divider"></div>
 
+    <!-- ★ 상단 색상 설정 리본 그룹 (색상선택 + 투명도 + 팔레트 가로 한 라인 배치) ★ -->
+    <div class="header-group" id="colorRibbonGroup" style="display: none;">
+      <span class="header-group-title">색상 설정</span>
+      <div class="header-row" style="gap: 10px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+          <div class="color-picker-wrapper" title="색상 선택">
+            <input type="color" id="colorPicker" value="#ffffff">
+          </div>
+          <span style="font-size: 9px; color: #aaa;">선택</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+          <label style="font-size: 9px; text-align: center;">투명도: <span id="alphaVal">0%</span></label>
+          <input type="range" id="alphaInput" min="10" max="100" value="100" style="width: 60px;">
+        </div>
+        <div class="palette-10steps" id="palette10Steps"></div>
+      </div>
+    </div>
+
     <div class="header-group tool-ribbon-group" id="toolRibbonGroup">
       <span class="header-group-title" id="toolRibbonTitle">연필 옵션</span>
       <div class="header-row" id="toolRibbonContent"></div>
@@ -809,23 +817,6 @@
           <button class="tool-btn" id="eraserBtn" title="지우개 (Q)"><img src="./Asset/tool4.png" style="width: 25px; height: 25px;" alt="Eraser"></button>
           <button class="tool-btn" id="shapeBtn" title="도형 그리기 (W)"><img src="./Asset/tool5.png" style="width: 25px; height: 25px;" alt="Shape"></button>
           <button class="tool-btn" id="eyedropperBtn" title="스포이드 (E)"><img src="./Asset/tool6.png" style="width: 25px; height: 25px;" alt="Eyedropper"></button>
-        </div>
-
-        <div class="divider" style="margin-top: 30px;"></div>
-
-        <span class="section-title">색깔</span>
-        <div class="color-section">
-          <div class="color-picker-wrapper" title="색상 선택">
-            <input type="color" id="colorPicker" value="#ffffff">
-          </div>
-
-          <div class="input-group">
-            <label style="font-size: 10px; text-align: center; margin-top:5px">투명도: <span id="alphaVal">0%</span></label>
-            <input type="range" id="alphaInput" min="10" max="100" value="100" style="width: 70px;">
-          </div>
-
-          <span class="section-title" style="margin-top:20px;">연관색조</span>
-          <div class="palette-10steps" id="palette10Steps"></div>
         </div>
       </div>
 
@@ -854,7 +845,6 @@
       <div class="settings-panel collapsed" id="settingsPanel">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span class="section-title">후처리</span>
-          <!-- 후처리 초기화 버튼 추가 -->
           <button id="resetPostBtn" style="font-size: 9px; padding: 2px 6px; background: #444; border: 1px solid #666; border-radius: 3px; color: #aaa; cursor: pointer;">초기화</button>
         </div>
         <div class="panel-group">
@@ -910,7 +900,7 @@
     </div>
 
     <div class="bottom-frame-panel" id="bottomFramePanel">
-      <span class="frame-panel-title" >
+      <span class="frame-panel-title">
         프레임
         <button class="panel-toggle-btn" id="toggleBottomBtn" title="프레임창 접기/펼치기">▼</button>
       </span>
@@ -960,7 +950,7 @@
     let clipboardBuffer = null;
 
     let draggedLayerIndex = null;
-    let draggedFrameIndex = null; // 프레임 드래그앤드롭 변수
+    let draggedFrameIndex = null;
 
     let historyStack = [];
     let historyIndex = -1;
@@ -1003,6 +993,7 @@
 
     const toolRibbonTitle = document.getElementById('toolRibbonTitle');
     const toolRibbonContent = document.getElementById('toolRibbonContent');
+    const colorRibbonGroup = document.getElementById('colorRibbonGroup');
 
     const colorPicker = document.getElementById('colorPicker');
     const alphaInput = document.getElementById('alphaInput');
@@ -1054,14 +1045,12 @@
     const toastMsgEl = document.getElementById('toastMsg');
     let toastTimeout = null;
 
-    // ★ 로고 클릭 시 새로고침 경고창 ★
     logoIcon.addEventListener('click', () => {
       if (confirm("작업 중인 내용이 초기화될 수 있습니다. 새로고침하시겠습니까?")) {
         window.location.reload();
       }
     });
 
-    // ★ 후처리 초기화 버튼 이벤트 ★
     resetPostBtn.addEventListener('click', () => {
       brightnessInput.value = 100;
       contrastInput.value = 100;
@@ -1171,6 +1160,13 @@
             l.canvas.style.height = `${DISPLAY_SIZE * aspectRatio}px`;
           });
         });
+      }
+
+      if (state.frameIdx !== activeFrameIndex) {
+        selectFrame(state.frameIdx);
+      }
+      if (state.layerIdx !== frames[activeFrameIndex].activeLayerIndex) {
+        selectLayer(state.layerIdx);
       }
 
       const curFrame = frames[state.frameIdx];
@@ -1336,6 +1332,14 @@
 
     function updateToolRibbon() {
       toolRibbonContent.innerHTML = '';
+      
+      const drawingTools = ['pencil', 'line', 'bucket', 'shape', 'eyedropper'];
+      if (drawingTools.includes(currentTool)) {
+        colorRibbonGroup.style.display = 'flex';
+      } else {
+        colorRibbonGroup.style.display = 'none';
+      }
+
       if (currentTool === 'pencil') {
         toolRibbonTitle.innerText = '연필 옵션';
         toolRibbonContent.innerHTML = `
@@ -1461,7 +1465,6 @@
       }
     }
 
-    // ★ 드래그 앤 드롭이 지원되는 프레임 추가 ★
     function addFrame() {
       const frameId = ++frameIdCounter;
       const frameObj = {
@@ -1511,7 +1514,6 @@
 
       frames.push(frameObj);
 
-      // --- 프레임 드래그 앤 드롭 이벤트 ---
       block.addEventListener('dragstart', (e) => {
         draggedFrameIndex = frames.indexOf(frameObj);
         block.classList.add('dragging');
@@ -1558,7 +1560,6 @@
       selectFrame(frames.length - 1);
     }
 
-    // 프레임 UI 순서 재정렬 렌더링
     function renderFrameUI() {
       frameListEl.innerHTML = '';
       frames.forEach((f) => {
@@ -2961,8 +2962,8 @@
                 loadedLayerCount++;
                 if (loadedLayerCount === totalLayers) {
                   updateFramePreview(frameObj);
-                  loadedFrameCount++;
-                  if (loadedFrameCount === totalFrames) {
+                  loadedLayerCount++;
+                  if (loadedLayerCount === totalFrames) {
                     renderFrameUI();
                     selectFrame(0);
                     showToast('프로젝트를 성공적으로 불러왔습니다.');
