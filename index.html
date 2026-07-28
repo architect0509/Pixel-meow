@@ -46,6 +46,14 @@
       z-index: 10;
       flex-wrap: nowrap;
       overflow-x: auto;
+      transition: max-height 0.25s ease, padding 0.25s ease;
+    }
+
+    header.collapsed {
+      max-height: 0;
+      padding: 0 18px;
+      border: none;
+      overflow: hidden;
     }
 
     .header-group {
@@ -225,10 +233,11 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 0;
-      gap: 8px;
+      padding: 0px 0;
+      gap: 4px;
       overflow-y: auto;
       z-index: 5;
+      flex-shrink: 0;
     }
 
     .sidebar-left { border-right-width: 1px; }
@@ -547,7 +556,7 @@
     }
 
     .settings-panel {
-      width: 220px;
+      width: 240px;
       background-color: #2d2d2d;
       border-left: 1px solid #1e1e1e;
       display: flex;
@@ -557,9 +566,10 @@
       transition: margin-right 0.25s ease;
       z-index: 4;
       overflow-y: auto;
+      flex-shrink: 0;
     }
 
-    .settings-panel.collapsed { margin-right: -220px; }
+    .settings-panel.collapsed { margin-right: -240px; }
 
     .toggle-settings-btn {
       width: 32px;
@@ -567,7 +577,7 @@
       background: #3a3a3a;
       border: 1px solid #555;
       color: #fff;
-      border-radius: 4px;
+      border-radius: 15px;
       cursor: pointer;
       display: flex;
       justify-content: center;
@@ -576,6 +586,8 @@
     }
 
     .toggle-settings-btn:hover { background: #4a4a4a; }
+    /* 활성화된 패널 버튼 효과 */
+    .toggle-settings-btn.active { background: #635e45; color: #111; border-color: #c89b08; }
 
     .panel-group { display: flex; flex-direction: column; gap: 6px; }
     .panel-group label { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
@@ -736,7 +748,7 @@
 </head>
 <body>
 
-  <header>
+  <header id="mainHeader">
     <img src="./Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
     <div class="header-group">
       <span class="header-group-title">캔버스 설정</span>
@@ -815,6 +827,10 @@
 
   <div class="workspace-wrapper">
     <div class="workspace">
+      <div style="position: absolute; top: -5px; right: 350px; z-index: 20;">
+        <button id="toggleHeaderBtn" title="상단 리본 접기/펼치기" style="background: #444; border: 1px solid #444; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: 70px;">▲</button>
+      </div>
+
       <div class="mini-nav-toolbar">
         <button class="nav-btn" id="handToolBtn" title="손 도구 (A)"><img src="./Asset/subTool1.png" style="width: 20px; height: 20px;" alt="Hand Tool"></button>
         <button class="nav-btn" id="selectToolBtn" title="선택 도구 (S)"><img src="./Asset/subTool2.png" style="width: 20px; height: 20px;" alt="Select Tool"></button>
@@ -846,7 +862,9 @@
       </main>
 
       <div class="sidebar sidebar-right">
-        <button class="toggle-settings-btn" id="toggleSettingsBtn" title="설정 패널" style="margin-top: 20px; width: 50px; height: 50px;"><img src="./Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
+        <button class="toggle-settings-btn" id="toggleSettingsBtn" title="저장 패널" style="margin-top: 20px; width: 50px; height: 50px;"><img src="./Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
+        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리 패널" style="margin-top: 10px; width: 50px; height: 50px;"><img src="./Asset/setting.png" style="width: 24px; height: 25px;" alt="Settings"></button>
+
         <div class="divider" style="margin-top: 20px;"></div>
         <span class="section-title">레이어</span>
         <div class="block-section">
@@ -855,7 +873,7 @@
         </div>
       </div>
 
-      <div class="settings-panel collapsed" id="settingsPanel">
+      <div class="settings-panel collapsed" id="postPanel">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span class="section-title">후처리</span>
           <button id="resetPostBtn" style="font-size: 9px; padding: 2px 6px; background: #444; border: 1px solid #666; border-radius: 3px; color: #aaa; cursor: pointer;">초기화</button>
@@ -876,8 +894,17 @@
           <label>투명도 <span id="canvasOpacityVal">100%</span></label>
           <input type="range" id="canvasOpacityInput" min="0" max="100" value="100">
         </div>
+        <div class="divider" style="margin: 10px 0;"></div>
+        <button class="btn-project" id="previewModalBtn" style="background:#2e7d32; color:#fff; border-color:#388e3c;">미리보기 재생</button>
+        <div style="color: #727272; text-align: center; margin-top: 25px; margin-bottom: 10px; font-size: 12px;">
+          <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
+          개발: 아티Artie<br>
+          Email: architect0507@naver.com<br><br>
+          Version: 1.1.0
+        </div>
+      </div>
 
-        <div class="divider" style="margin-top: 20px;"></div>
+      <div class="settings-panel collapsed" id="settingsPanel">
         <span class="section-title">프로젝트 저장/열기</span>
         <button class="btn-project" id="saveProjectBtn">프로젝트 파일 저장 (.pix)</button>
         <button class="btn-project" id="loadProjectBtn" style="background:#4a4a4a; color:#fff; border-color:#666;">프로젝트 파일 열기</button>
@@ -907,12 +934,7 @@
         <button class="btn-save-main" id="saveBtn">통합 PNG 저장</button>
         <button class="btn-save-sub" id="saveSeparateBtn">개별 프레임 저장</button>
         <button class="btn-save-gif" id="saveGifBtn">GIF 애니메이션 저장</button>
-        <div style="color: #727272; text-align: center; margin-top: 25px; margin-bottom: 10px; font-size: 12px;">
-          <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
-          개발: 아티Artie<br>
-          Email: architect0507@naver.com<br><br>
-          Version: 1.0.1
-        </div>
+        
       </div>
     </div>
 
@@ -926,6 +948,26 @@
         <button class="btn-add-item" id="addFrameBtn" title="새 프레임 추가">+</button>
       </div>
     </div>
+  </div>
+
+  <div id="previewModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; gap: 16px;">
+    <div style="display: flex; gap: 10px; align-items: center; background: #222; padding: 8px 16px; border-radius: 8px; border: 1px solid #444;">
+      <span style="color:#fff; font-size:12px; font-weight:bold;">배경 전환:</span>
+      <button id="modalBgWhite" style="background:#fff; color:#000; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">흰색</button>
+      <button id="modalBgBlack" style="background:#000; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">검은색</button>
+      <button id="modalBgGray" style="background:#777; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">회색</button>
+      <div style="width:1px; height:16px; background:#555; margin:0 4px;"></div>
+      <label style="color:#aaa; font-size:11px; cursor:pointer; background:#444; padding:4px 8px; border-radius:4px;">
+        커스텀 배경 첨부 <input type="file" id="modalBgFile" accept="image/*" style="display: none;">
+      </label>
+      <button id="modalBgClear" style="background:#555; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">이미지 제거</button>
+    </div>
+    
+    <div id="modalCanvasWrapper" style="position: relative; padding: 20px; border-radius: 8px; background-color: #ffffff; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.8);">
+      <canvas id="previewModalCanvas" style="image-rendering: pixelated; max-width: 80vw; max-height: 70vh;"></canvas>
+    </div>
+
+    <button id="closePreviewModal" style="background:#d9534f; color:#fff; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">미리보기 닫기</button>
   </div>
 
   <div id="toastMsg" class="toast-msg"></div>
@@ -1039,6 +1081,9 @@
 
     const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
     const settingsPanel = document.getElementById('settingsPanel');
+    const togglePostBtn = document.getElementById('togglePostBtn');
+    const postPanel = document.getElementById('postPanel');
+
     const brightnessInput = document.getElementById('brightnessInput');
     const contrastInput = document.getElementById('contrastInput');
     const saturateInput = document.getElementById('saturateInput');
@@ -1063,8 +1108,107 @@
     const bottomFramePanel = document.getElementById('bottomFramePanel');
     const toggleBottomBtn = document.getElementById('toggleBottomBtn');
 
-    const toastMsgEl = document.getElementById('toastMsg');
-    let toastTimeout = null;
+    const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+    const mainHeader = document.getElementById('mainHeader');
+    toggleHeaderBtn.addEventListener('click', () => {
+      mainHeader.classList.toggle('collapsed');
+      toggleHeaderBtn.innerText = mainHeader.classList.contains('collapsed') ? '▼ ' : '▲ ';
+    });
+
+    // ★ 패널 토글 및 버튼 활성화 효과 연동 ★
+    togglePostBtn.addEventListener('click', () => {
+      postPanel.classList.toggle('collapsed');
+      togglePostBtn.classList.toggle('active', !postPanel.classList.contains('collapsed'));
+      if (!settingsPanel.classList.contains('collapsed')) {
+        settingsPanel.classList.add('collapsed');
+        toggleSettingsBtn.classList.remove('active');
+      }
+    });
+
+    toggleSettingsBtn.addEventListener('click', () => {
+      settingsPanel.classList.toggle('collapsed');
+      toggleSettingsBtn.classList.toggle('active', !settingsPanel.classList.contains('collapsed'));
+      if (!postPanel.classList.contains('collapsed')) {
+        postPanel.classList.add('collapsed');
+        togglePostBtn.classList.remove('active');
+      }
+    });
+
+    const previewModalBtn = document.getElementById('previewModalBtn');
+    const previewModal = document.getElementById('previewModal');
+    const closePreviewModal = document.getElementById('closePreviewModal');
+    const previewModalCanvas = document.getElementById('previewModalCanvas');
+    const modalCanvasWrapper = document.getElementById('modalCanvasWrapper');
+    const modalBgWhite = document.getElementById('modalBgWhite');
+    const modalBgBlack = document.getElementById('modalBgBlack');
+    const modalBgGray = document.getElementById('modalBgGray');
+    const modalBgFile = document.getElementById('modalBgFile');
+    const modalBgClear = document.getElementById('modalBgClear');
+
+    let modalAnimInterval = null;
+
+    previewModalBtn.addEventListener('click', () => {
+      if (frames.length === 0) return;
+      previewModal.style.display = 'flex';
+
+      previewModalCanvas.width = gridWidth * 16;
+      previewModalCanvas.height = gridHeight * 16;
+      const mCtx = previewModalCanvas.getContext('2d');
+      mCtx.imageSmoothingEnabled = false;
+
+      let fIdx = 0;
+      const fps = parseInt(fpsInput.value) || 6;
+
+      if (modalAnimInterval) clearInterval(modalAnimInterval);
+
+      modalAnimInterval = setInterval(() => {
+        const curF = frames[fIdx];
+        mCtx.clearRect(0, 0, previewModalCanvas.width, previewModalCanvas.height);
+
+        const tempC = document.createElement('canvas');
+        tempC.width = gridWidth;
+        tempC.height = gridHeight;
+        const tempCtx = tempC.getContext('2d');
+        curF.layers.forEach(l => { if (l.visible) tempCtx.drawImage(l.canvas, 0, 0); });
+
+        mCtx.filter = `brightness(${brightnessInput.value}%) contrast(${contrastInput.value}%) saturate(${saturateInput.value}%) opacity(${canvasOpacityInput.value}%)`;
+        mCtx.drawImage(tempC, 0, 0, previewModalCanvas.width, previewModalCanvas.height);
+
+        fIdx = (fIdx + 1) % frames.length;
+      }, 1000 / fps);
+    });
+
+    closePreviewModal.addEventListener('click', () => {
+      previewModal.style.display = 'none';
+      if (modalAnimInterval) clearInterval(modalAnimInterval);
+    });
+
+    modalBgWhite.addEventListener('click', () => {
+      modalCanvasWrapper.style.backgroundColor = '#ffffff';
+      modalCanvasWrapper.style.backgroundImage = 'none';
+    });
+    modalBgBlack.addEventListener('click', () => {
+      modalCanvasWrapper.style.backgroundColor = '#000000';
+      modalCanvasWrapper.style.backgroundImage = 'none';
+    });
+    modalBgGray.addEventListener('click', () => {
+      modalCanvasWrapper.style.backgroundColor = '#777777';
+      modalCanvasWrapper.style.backgroundImage = 'none';
+    });
+    modalBgClear.addEventListener('click', () => {
+      modalCanvasWrapper.style.backgroundColor = '#ffffff';
+      modalCanvasWrapper.style.backgroundImage = 'none';
+    });
+
+    modalBgFile.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          modalCanvasWrapper.style.backgroundImage = `url('${event.target.result}')`;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      }
+    });
 
     logoIcon.addEventListener('click', () => {
       if (confirm("작업 중인 내용이 초기화될 수 있습니다. 새로고침하시겠습니까?")) {
@@ -1418,7 +1562,6 @@
       updateActiveLayerPreview();
     });
 
-    // ★ 선택 영역 상태에 따라 상단 탐색/이동 옵션에 선택 취소 버튼 토글 ★
     function updateToolRibbon() {
       toolRibbonContent.innerHTML = '';
       
@@ -2682,7 +2825,6 @@
       inp.addEventListener('input', updateCanvasFilters);
     });
 
-    toggleSettingsBtn.addEventListener('click', () => settingsPanel.classList.toggle('collapsed'));
     addFrameBtn.addEventListener('click', addFrame);
     addLayerBtn.addEventListener('click', addLayer);
 
