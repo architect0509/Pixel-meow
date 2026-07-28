@@ -2400,11 +2400,9 @@
               const val = (dx * dx) / (a * a) + (dy * dy) / (b * b);
               if (val <= 1.0) pixels.push({ x, y });
             } else {
-              // 브레즈햄 스타일 엄격한 1픽셀 외곽선 알고리즘
               const dist1 = Math.abs((dx * dx) / (a * a) + (dy * dy) / (b * b) - 1.0);
               const inside = (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1.0;
               
-              // 외곽에 인접한 픽셀만 골라내어 두께 1픽셀 유지
               let isBoundary = false;
               if (inside) {
                 const checkSteps = [[1,0], [-1,0], [0,1], [0,-1]];
@@ -2635,7 +2633,6 @@
 
         draggedData = null;
         moveDragStart = null;
-        // Ctrl+V 등으로 붙여넣기 완료 후 클릭 시 선택 도구로 복귀
         setTool('select');
         return;
       }
@@ -2834,7 +2831,6 @@
         setTool('move');
         draggedData = clipboardBuffer.data;
         
-        // 영역의 정중앙에 마우스 위치가 오도록 오프셋 계산 (그리드 중심 기준)
         const targetX = Math.floor((gridWidth - clipboardBuffer.width) / 2);
         const targetY = Math.floor((gridHeight - clipboardBuffer.height) / 2);
 
@@ -2856,6 +2852,14 @@
       } else if (e.ctrlKey && key === 'y') {
         e.preventDefault(); redo();
       }
+    });
+
+    addFrameBtn.addEventListener('click', () => {
+      addFrame();
+    });
+
+    addLayerBtn.addEventListener('click', () => {
+      addLayer();
     });
 
     function drawDot(x, y) {
