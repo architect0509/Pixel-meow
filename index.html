@@ -909,7 +909,7 @@
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
-          Version: 1.2.1
+          Version: 1.2.2
         </div>
       </div>
 
@@ -961,9 +961,9 @@
   <div id="previewModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; gap: 16px;">
     <div style="display: flex; gap: 10px; align-items: center; background: #222; padding: 8px 16px; border-radius: 8px; border: 1px solid #444;">
       <span style="color:#fff; font-size:12px; font-weight:bold;">배경 전환:</span>
+      <button id="modalBgGray" style="background:#777; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">회색</button>
       <button id="modalBgWhite" style="background:#fff; color:#000; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">흰색</button>
       <button id="modalBgBlack" style="background:#000; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">검은색</button>
-      <button id="modalBgGray" style="background:#777; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:11px;">회색</button>
       <div style="width:1px; height:16px; background:#555; margin:0 4px;"></div>
       <label style="color:#aaa; font-size:11px; cursor:pointer; background:#444; padding:4px 8px; border-radius:4px;">
         커스텀 배경 첨부 <input type="file" id="modalBgFile" accept="image/*" style="display: none;">
@@ -971,7 +971,7 @@
       <button id="modalBgClear" style="background:#555; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">이미지 제거</button>
     </div>
     
-    <div id="modalCanvasWrapper" style="position: relative; padding: 20px; border-radius: 8px; background-color: #ffffff; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.8);">
+    <div id="modalCanvasWrapper" style="position: relative; padding: 20px; border-radius: 8px; background-color: #777; background-size: cover; background-position: center; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 30px rgba(0,0,0,0.8);">
       <canvas id="previewModalCanvas" style="image-rendering: pixelated; max-width: 80vw; max-height: 70vh;"></canvas>
     </div>
 
@@ -2861,6 +2861,356 @@
     addLayerBtn.addEventListener('click', () => {
       addLayer();
     });
+
+    // ★ 애니메이션 그룹 재생 버튼 이벤트 리스너 추가 ★
+    playBtn.addEventListener('click', () => {
+      if (frames.length === 0) return;
+      isPlaying = !isPlaying;
+
+      if (isPlaying) {
+        playBtn.innerText = '정지';
+        playBtn.classList.add('playing');
+        
+        // 편집 중 어니언 스킨 숨기기
+        onionPrevCanvas.style.opacity = 0;
+        onionNextCanvas.style.opacity = 0;
+
+        let curPlayIdx = activeFrameIndex >= 0 ? activeFrameIndex : 0;
+        const fps = parseInt(fpsInput.value) || 6;
+
+        if (playInterval) clearInterval(playInterval);
+
+        playInterval = setInterval(() => {
+          frames.forEach((f, idx) => {
+            f.layers.forEach(l => {
+              l.canvas.style.display = (idx === curPlayIdx && f.visible && l.visible) ? 'block' : 'none';
+            });
+          });
+          curPlayIdx = (curPlayIdx + 1) % frames.length;
+        }, 1000 / fps);
+      } else {
+        playBtn.innerText = '재생';
+        playBtn.classList.remove('playing');
+
+        if (playInterval) {
+          clearInterval(playInterval);
+          playInterval = null;
+        }
+
+        // 원래 선택된 프레임 상태로 복구
+        if (activeFrameIndex >= 0) {
+          selectFrame(activeFrameIndex);
+        }
+        updateOnionSkin();
+      }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      if (frames.length === 0) return;
+      const scale = parseInt(scaleSelect.value) || 1;
+      const inputCols = parseInt(columnsInput.value) || 4;
+      const cols = Math.min(frames.length, Math.max(1, inputCols));
+      const rows = Math.ceil(frames.length / cols);
+
+      const sheetW = gridWidth * scale * cols;
+      const sheetH = gridHeight * scale * rows;
+
+      const sheetCanvas = document.createElement('canvas');
+      sheetCanvas.width = sheetW;
+      sheetCanvas.height = sheetH;
+      const sCtx = sheetCanvas.getContext('2d');
+      sCtx.imageSmoothingEnabled = false;
+
+      frames.forEach((f, idx) => {
+        const tempC = document.createElement('canvas');
+        tempC.width = gridWidth;
+        tempC.height = gridHeight;
+        const tempCtx = tempC.getContext('2d');
+        f.layers.forEach(l => { if (l.visible) tempCtx.drawImage(l.canvas, 0, 0); });
+
+        const cX = (idx % cols) * gridWidth * scale;
+        const cY = Math.floor(idx / cols) * gridHeight * scale;
+
+        sCtx.drawImage(tempC, 0, 0, gridWidth, gridHeight, cX, cY, gridWidth * scale, gridHeight * scale);
+      });
+
+      const baseName = fileNameInput.value || 'my-pixel-art';
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: baseName + '.png',
+            types: [{ description: 'PNG Image', accept: { 'image/png': ['.png'] } }]
+          });
+          const writable = await handle.createWritable();
+          const blob = await new Promise(resolve => sheetCanvas.toBlob(resolve, 'image/png'));
+          await writable.write(blob);
+          await writable.close();
+          showToast('통합 PNG 저장 완료');
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+          else return;
+        }
+      }
+
+      const link = document.createElement('a');
+      link.download = baseName + '.png';
+      link.href = sheetCanvas.toDataURL('image/png');
+      link.click();
+      showToast('통합 PNG 저장 완료');
+    });
+
+    saveSeparateBtn.addEventListener('click', async () => {
+      if (frames.length === 0) return;
+      const scale = parseInt(scaleSelect.value) || 1;
+      const baseName = fileNameInput.value || 'frame';
+
+      if (window.showDirectoryPicker) {
+        try {
+          const dirHandle = await window.showDirectoryPicker();
+          for (let idx = 0; idx < frames.length; idx++) {
+            const f = frames[idx];
+            const tempC = document.createElement('canvas');
+            tempC.width = gridWidth * scale;
+            tempC.height = gridHeight * scale;
+            const tempCtx = tempC.getContext('2d');
+            tempCtx.imageSmoothingEnabled = false;
+
+            const subC = document.createElement('canvas');
+            subC.width = gridWidth;
+            subC.height = gridHeight;
+            const subCtx = subC.getContext('2d');
+            f.layers.forEach(l => { if (l.visible) subCtx.drawImage(l.canvas, 0, 0); });
+
+            tempCtx.drawImage(subC, 0, 0, gridWidth, gridHeight, 0, 0, gridWidth * scale, gridHeight * scale);
+
+            const fileHandle = await dirHandle.getFileHandle(`${baseName}_${idx + 1}.png`, { create: true });
+            const writable = await fileHandle.createWritable();
+            const blob = await new Promise(resolve => tempC.toBlob(resolve, 'image/png'));
+            await writable.write(blob);
+            await writable.close();
+          }
+          showToast('개별 프레임 폴더 저장 완료');
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+          else return;
+        }
+      }
+
+      frames.forEach((f, idx) => {
+        const tempC = document.createElement('canvas');
+        tempC.width = gridWidth * scale;
+        tempC.height = gridHeight * scale;
+        const tempCtx = tempC.getContext('2d');
+        tempCtx.imageSmoothingEnabled = false;
+
+        const subC = document.createElement('canvas');
+        subC.width = gridWidth;
+        subC.height = gridHeight;
+        const subCtx = subC.getContext('2d');
+        f.layers.forEach(l => { if (l.visible) subCtx.drawImage(l.canvas, 0, 0); });
+
+        tempCtx.drawImage(subC, 0, 0, gridWidth, gridHeight, 0, 0, gridWidth * scale, gridHeight * scale);
+
+        const link = document.createElement('a');
+        link.download = `${baseName}_${idx + 1}.png`;
+        link.href = tempC.toDataURL('image/png');
+        link.click();
+      });
+      showToast('개별 프레임 저장 완료');
+    });
+
+    saveGifBtn.addEventListener('click', async () => {
+      if (frames.length === 0) return;
+      const scale = parseInt(scaleSelect.value) || 1;
+      const fps = parseInt(fpsInput.value) || 6;
+      const baseName = fileNameInput.value || 'animation';
+
+      showToast('GIF 생성 중...');
+
+      try {
+        const workerResponse = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
+        const workerCode = await workerResponse.text();
+        const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(workerBlob);
+
+        const gif = new GIF({
+          workers: 2,
+          workerScript: workerUrl,
+          quality: 10,
+          width: gridWidth * scale,
+          height: gridHeight * scale,
+          transparent: 0x000000
+        });
+
+        frames.forEach(f => {
+          const tempC = document.createElement('canvas');
+          tempC.width = gridWidth * scale;
+          tempC.height = gridHeight * scale;
+          const tempCtx = tempC.getContext('2d');
+          tempCtx.imageSmoothingEnabled = false;
+
+          const subC = document.createElement('canvas');
+          subC.width = gridWidth;
+          subC.height = gridHeight;
+          const subCtx = subC.getContext('2d');
+          f.layers.forEach(l => { if (l.visible) subCtx.drawImage(l.canvas, 0, 0); });
+
+          tempCtx.drawImage(subC, 0, 0, gridWidth, gridHeight, 0, 0, gridWidth * scale, gridHeight * scale);
+          gif.addFrame(tempC, { delay: 1000 / fps });
+        });
+
+        gif.on('finished', async (blob) => {
+          if (window.showSaveFilePicker) {
+            try {
+              const handle = await window.showSaveFilePicker({
+                suggestedName: baseName + '.gif',
+                types: [{ description: 'GIF Animation', accept: { 'image/gif': ['.gif'] } }]
+              });
+              const writable = await handle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+              showToast('GIF 애니메이션 저장 완료');
+              return;
+            } catch (err) {
+              if (err.name !== 'AbortError') console.error(err);
+              else return;
+            }
+          }
+
+          const link = document.createElement('a');
+          link.download = baseName + '.gif';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          showToast('GIF 애니메이션 저장 완료');
+        });
+
+        gif.render();
+      } catch (err) {
+        console.error(err);
+        showToast('GIF 생성 실패 (네트워크 또는 워커 오류)');
+      }
+    });
+
+    saveProjectBtn.addEventListener('click', async () => {
+      if (frames.length === 0) return;
+      const projectData = {
+        width: gridWidth,
+        height: gridHeight,
+        frames: frames.map(f => ({
+          visible: f.visible,
+          layers: f.layers.map(l => ({
+            name: l.name,
+            visible: l.visible,
+            dataUrl: l.canvas.toDataURL()
+          }))
+        }))
+      };
+
+      const baseName = fileNameInput.value || 'project';
+      const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
+
+      if (window.showSaveFilePicker) {
+        try {
+          const handle = await window.showSaveFilePicker({
+            suggestedName: baseName + '.pix',
+            types: [{ description: 'Pixel-meow Project', accept: { 'application/json': ['.pix'] } }]
+          });
+          const writable = await handle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          showToast('프로젝트 파일 저장 완료');
+          return;
+        } catch (err) {
+          if (err.name !== 'AbortError') console.error(err);
+          else return;
+        }
+      }
+
+      const link = document.createElement('a');
+      link.download = baseName + '.pix';
+      link.href = URL.createObjectURL(blob);
+      link.click();
+      showToast('프로젝트 파일 저장 완료');
+    });
+
+    loadProjectBtn.addEventListener('click', () => {
+      projectFileInput.click();
+    });
+
+    projectFileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        loadProjectFromFile(e.target.files[0]);
+      }
+    });
+
+    function loadProjectFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target.result);
+          if (!data.width || !data.height || !data.frames) {
+            alert('유효하지 않은 프로젝트 파일입니다.');
+            return;
+          }
+
+          gridWidth = data.width;
+          gridHeight = data.height;
+          widthInput.value = gridWidth;
+          heightInput.value = gridHeight;
+          updateContainerDimensions();
+          drawGrid();
+
+          frames.forEach(f => f.layers.forEach(l => l.canvas.remove()));
+          frames = [];
+          frameListEl.innerHTML = '';
+          layerListEl.innerHTML = '';
+          frameIdCounter = 0;
+          layerIdCounter = 0;
+
+          let loadedCount = 0;
+          const totalFrames = data.frames.length;
+
+          data.frames.forEach((fData) => {
+            addFrame();
+            const curF = frames[frames.length - 1];
+            curF.visible = fData.visible;
+            if (!curF.visible) curF.blockEl.classList.add('hidden-block');
+
+            curF.layers[0].canvas.remove();
+            curF.layers = [];
+
+            let layerLoadedCount = 0;
+            fData.layers.forEach((lData) => {
+              createLayerForFrame(curF);
+              const curL = curF.layers[curF.layers.length - 1];
+              curL.name = lData.name;
+              curL.visible = lData.visible;
+
+              const img = new Image();
+              img.onload = () => {
+                curL.ctx.clearRect(0, 0, gridWidth, gridHeight);
+                curL.ctx.drawImage(img, 0, 0);
+                updateActiveLayerPreview();
+                layerLoadedCount++;
+                if (layerLoadedCount === fData.layers.length) {
+                  loadedCount++;
+                  if (loadedCount === totalFrames) {
+                    selectFrame(0);
+                    showToast('프로젝트 불러오기 완료');
+                  }
+                }
+              };
+              img.src = lData.dataUrl;
+            });
+          });
+        } catch (err) {
+          alert('프로젝트 파일을 읽는 중 오류가 발생했습니다.');
+        }
+      };
+      reader.readAsText(file);
+    }
 
     function drawDot(x, y) {
       if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return;
