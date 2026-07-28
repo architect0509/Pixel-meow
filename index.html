@@ -93,7 +93,7 @@
     }
 
     header input[type="number"] {
-      width: 56px;
+      width: 42px;
       background: #1e1e1e;
       border: 1px solid #555;
       color: #fff;
@@ -733,7 +733,7 @@
 
     #flipHorizontalBtn, #flipVerticalBtn, #rotateBtn, #centerAlignBtn {
       width: 25px;           
-      height: 25px;        
+      height: 25px;         
       background-color: transparent;
       border: none;      
       outline: none;  
@@ -762,9 +762,9 @@
       <span class="header-group-title">캔버스 설정</span>
       <div class="header-row">
         <label class="drag-label" for="widthInput">가로:</label>
-        <input type="number" id="widthInput" value="16" min="2" max="128">
+        <input type="number" id="widthInput" value="32" min="2" max="256">
         <label class="drag-label" for="heightInput" style="margin-left: 4px;">세로:</label>
-        <input type="number" id="heightInput" value="16" min="2" max="128">
+        <input type="number" id="heightInput" value="32" min="2" max="256">
         <button class="btn-apply" id="applySizeBtn">적용</button>
       </div>
       <div class="header-row">
@@ -909,7 +909,7 @@
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
-          Version: 1.2.0
+          Version: 1.2.1
         </div>
       </div>
 
@@ -1147,6 +1147,8 @@
     const toggleBottomBtn = document.getElementById('toggleBottomBtn');
 
     const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+    const toastMsgEl = document.getElementById('toastMsg');
+    let toastTimeout = null;
 
     const toolbar = document.querySelector('.mini-nav-toolbar');
     const handle = document.querySelector('.drag-handle');
@@ -2386,16 +2388,38 @@
         const cx = minX + rx;
         const cy = minY + ry;
 
+        const a = rx || 0.5;
+        const b = ry || 0.5;
+
         for (let x = minX; x <= maxX; x++) {
           for (let y = minY; y <= maxY; y++) {
-            const dx = (x + 0.5 - cx) / (rx || 0.5);
-            const dy = (y + 0.5 - cy) / (ry || 0.5);
-            const val = dx * dx + dy * dy;
+            const dx = (x + 0.5 - cx);
+            const dy = (y + 0.5 - cy);
 
             if (fill) {
+              const val = (dx * dx) / (a * a) + (dy * dy) / (b * b);
               if (val <= 1.0) pixels.push({ x, y });
             } else {
-              if (val <= 1.2 && val >= 0.5) pixels.push({ x, y });
+              // 브레즈햄 스타일 엄격한 1픽셀 외곽선 알고리즘
+              const dist1 = Math.abs((dx * dx) / (a * a) + (dy * dy) / (b * b) - 1.0);
+              const inside = (dx * dx) / (a * a) + (dy * dy) / (b * b) <= 1.0;
+              
+              // 외곽에 인접한 픽셀만 골라내어 두께 1픽셀 유지
+              let isBoundary = false;
+              if (inside) {
+                const checkSteps = [[1,0], [-1,0], [0,1], [0,-1]];
+                for (let step of checkSteps) {
+                  let ndx = dx + step[0];
+                  let ndy = dy + step[1];
+                  if ((ndx * ndx) / (a * a) + (ndy * ndy) / (b * b) > 1.0) {
+                    isBoundary = true;
+                    break;
+                  }
+                }
+              }
+              if (isBoundary || (dist1 < 0.35 && inside)) {
+                pixels.push({ x, y });
+              }
             }
           }
         }
@@ -2421,6 +2445,19 @@
 
     canvasViewport.addEventListener('pointerdown', (e) => {
       canvasViewport.setPointerCapture(e.pointerId);
+
+      const containerRect = canvasContainer.getBoundingClientRect();
+      const isOutsideCanvas = (
+        e.clientX < containerRect.left ||
+        e.clientX > containerRect.right ||
+        e.clientY < containerRect.top ||
+        e.clientY > containerRect.bottom
+      );
+
+      if (isOutsideCanvas && selectionRect) {
+        clearSelection();
+        return;
+      }
 
       if (currentTool === 'hand' || e.button === 1) {
         isPanning = true;
@@ -2598,6 +2635,8 @@
 
         draggedData = null;
         moveDragStart = null;
+        // Ctrl+V 등으로 붙여넣기 완료 후 클릭 시 선택 도구로 복귀
+        setTool('select');
         return;
       }
 
@@ -2655,7 +2694,6 @@
       updateTransform();
     }, { passive: false });
 
-    // ★ 드래그 앤 드롭 시 분할 설정 모달 호출 ★
     canvasViewport.addEventListener('dragover', (e) => e.preventDefault());
     canvasViewport.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -2734,6 +2772,16 @@
 
       if (e.key === 'Escape') {
         clearSelection();
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (selectionRect && activeFrameIndex !== -1) {
+          e.preventDefault();
+          saveHistory();
+          const curFrame = frames[activeFrameIndex];
+          const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
+          ctx.clearRect(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
+          updateActiveLayerPreview();
+          showToast('선택 영역 삭제 완료');
+        }
       } else if (key === '1') {
         setTool('pencil');
       } else if (key === '2') {
@@ -2757,31 +2805,52 @@
         updateTransform();
       } else if (e.ctrlKey && key === 'c') {
         e.preventDefault();
-        if (activeFrameIndex === -1) return;
+        if (activeFrameIndex === -1 || !selectionRect) return;
         const curFrame = frames[activeFrameIndex];
         const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
-
-        const rect = selectionRect || { x: 0, y: 0, w: gridWidth, h: gridHeight };
         clipboardBuffer = {
-          data: ctx.getImageData(rect.x, rect.y, rect.w, rect.h),
-          rect: { ...rect }
+          data: ctx.getImageData(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h),
+          width: selectionRect.w,
+          height: selectionRect.h
         };
+        showToast('선택 영역 복사 완료');
       } else if (e.ctrlKey && key === 'x') {
         e.preventDefault();
-        if (activeFrameIndex === -1) return;
+        if (activeFrameIndex === -1 || !selectionRect) return;
         saveHistory();
-
         const curFrame = frames[activeFrameIndex];
         const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
-
-        const rect = selectionRect || { x: 0, y: 0, w: gridWidth, h: gridHeight };
         clipboardBuffer = {
-          data: ctx.getImageData(rect.x, rect.y, rect.w, rect.h),
-          rect: { ...rect }
+          data: ctx.getImageData(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h),
+          width: selectionRect.w,
+          height: selectionRect.h
         };
-
-        ctx.clearRect(rect.x, rect.y, rect.w, rect.h);
+        ctx.clearRect(selectionRect.x, selectionRect.y, selectionRect.w, selectionRect.h);
         updateActiveLayerPreview();
+        showToast('선택 영역 잘라내기 완료');
+      } else if (e.ctrlKey && key === 'v') {
+        e.preventDefault();
+        if (!clipboardBuffer || activeFrameIndex === -1) return;
+        setTool('move');
+        draggedData = clipboardBuffer.data;
+        
+        // 영역의 정중앙에 마우스 위치가 오도록 오프셋 계산 (그리드 중심 기준)
+        const targetX = Math.floor((gridWidth - clipboardBuffer.width) / 2);
+        const targetY = Math.floor((gridHeight - clipboardBuffer.height) / 2);
+
+        selectionRect = { x: targetX, y: targetY, w: clipboardBuffer.width, h: clipboardBuffer.height };
+        dragOriginPos = { x: targetX, y: targetY };
+        isMoveDragging = true;
+        moveDragStart = { x: targetX + Math.floor(clipboardBuffer.width / 2), y: targetY + Math.floor(clipboardBuffer.height / 2) };
+
+        previewCtx.clearRect(0, 0, gridWidth, gridHeight);
+        const tempC = document.createElement('canvas');
+        tempC.width = draggedData.width;
+        tempC.height = draggedData.height;
+        tempC.getContext('2d').putImageData(draggedData, 0, 0);
+        previewCtx.drawImage(tempC, selectionRect.x, selectionRect.y);
+        drawSelectionOverlay();
+        showToast('붙여넣을 위치를 클릭하세요');
       } else if (e.ctrlKey && key === 'z') {
         e.preventDefault(); undo();
       } else if (e.ctrlKey && key === 'y') {
