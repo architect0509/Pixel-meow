@@ -586,7 +586,6 @@
     }
 
     .toggle-settings-btn:hover { background: #4a4a4a; }
-    /* 활성화된 패널 버튼 효과 */
     .toggle-settings-btn.active { background: #635e45; color: #111; border-color: #c89b08; }
 
     .panel-group { display: flex; flex-direction: column; gap: 6px; }
@@ -718,6 +717,15 @@
       transform: translateX(-50%) translateY(-2px);
     }
 
+    .drag-handle {
+      height: 25px;
+      margin-top: -5px;
+      cursor: move;
+      text-align: center;
+      font-size: 20px;
+      color: #888;
+    }
+
     #flipHorizontalBtn { background-image: url('./Asset/Btn1.png'); }
     #flipVerticalBtn   { background-image: url('./Asset/Btn2.png'); }
     #rotateBtn         { background-image: url('./Asset/Btn3.png'); }
@@ -749,7 +757,7 @@
 <body>
 
   <header id="mainHeader">
-    <img src="./Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; margin-top: 6px;cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
+    <img src="./Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; margin-top: 6px; cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
     <div class="header-group">
       <span class="header-group-title">캔버스 설정</span>
       <div class="header-row">
@@ -828,13 +836,14 @@
   <div class="workspace-wrapper">
     <div class="workspace">
       <div style="position: absolute; top: -5px; right: 350px; z-index: 20;">
-        <button id="toggleHeaderBtn" title="상단 리본 접기/펼치기" style="background: #444; border: 1px solid #444; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: 70px;">▲</button>
+        <button id="toggleHeaderBtn" title="상단 리본 접기/펼치기" style="background: #444; border: 1px solid #444; color: #fff; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; width: 70px;">▲ </button>
       </div>
 
       <div class="mini-nav-toolbar">
         <button class="nav-btn" id="handToolBtn" title="손 도구 (A)"><img src="./Asset/subTool1.png" style="width: 20px; height: 20px;" alt="Hand Tool"></button>
         <button class="nav-btn" id="selectToolBtn" title="선택 도구 (S)"><img src="./Asset/subTool2.png" style="width: 20px; height: 20px;" alt="Select Tool"></button>
         <button class="nav-btn" id="moveToolBtn" title="이동 도구 (D)"><img src="./Asset/subTool3.png" style="width: 20px; height: 20px;" alt="Move Tool"></button>
+        <div class="drag-handle">=</div>
       </div>
 
       <div class="sidebar sidebar-left">
@@ -863,7 +872,7 @@
 
       <div class="sidebar sidebar-right">
         <button class="toggle-settings-btn" id="toggleSettingsBtn" title="저장 패널" style="margin-top: 20px; width: 50px; height: 50px;"><img src="./Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
-        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리 패널" style="margin-top: 10px; width: 50px; height: 50px;"><img src="./Asset/setting.png" style="width: 24px; height: 25px;" alt="Settings"></button>
+        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리 패널" style="margin-top: 10px; width: 50px; height: 50px;"><img src="./Asset/setting.png" style="width: 23px; height: 25px;" alt="Settings"></button>
 
         <div class="divider" style="margin-top: 20px;"></div>
         <span class="section-title">레이어</span>
@@ -900,7 +909,7 @@
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
-          Version: 1.1.0
+          Version: 1.2.0
         </div>
       </div>
 
@@ -934,7 +943,6 @@
         <button class="btn-save-main" id="saveBtn">통합 PNG 저장</button>
         <button class="btn-save-sub" id="saveSeparateBtn">개별 프레임 저장</button>
         <button class="btn-save-gif" id="saveGifBtn">GIF 애니메이션 저장</button>
-        
       </div>
     </div>
 
@@ -968,6 +976,34 @@
     </div>
 
     <button id="closePreviewModal" style="background:#d9534f; color:#fff; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">미리보기 닫기</button>
+  </div>
+
+  <div id="splitImageModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: #333; border: 1px solid #555; border-radius: 10px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.8);">
+      <span style="font-size: 13px; font-weight: bold; color: #e9bd0c; text-align: center;">이미지 분할 및 첨부 설정</span>
+      
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 11px; color: #aaa;">가로 크기 (px):</label>
+        <input type="number" id="splitTargetWidth" value="16" min="1" max="1024" style="background:#1e1e1e; border:1px solid #555; color:#fff; padding:6px; border-radius:4px; font-size:12px;">
+        <span id="splitOriginalSizeInfo" style="font-size: 9px; color: #777;">원본: 0 x 0 px</span>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+          <label style="font-size: 11px; color: #aaa;">가로 등분 (Col):</label>
+          <input type="number" id="splitColsInput" value="1" min="1" max="64" style="background:#1e1e1e; border:1px solid #555; color:#fff; padding:6px; border-radius:4px; font-size:12px; text-align:center;">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+          <label style="font-size: 11px; color: #aaa;">세로 등분 (Row):</label>
+          <input type="number" id="splitRowsInput" value="1" min="1" max="64" style="background:#1e1e1e; border:1px solid #555; color:#fff; padding:6px; border-radius:4px; font-size:12px; text-align:center;">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button id="cancelSplitBtn" style="flex:1; background:#555; border:none; color:#fff; padding:8px; border-radius:4px; cursor:pointer; font-size:12px;">취소</button>
+        <button id="confirmSplitBtn" style="flex:1; background:#0e639c; border:none; color:#fff; padding:8px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">첨부 및 분할</button>
+      </div>
+    </div>
   </div>
 
   <div id="toastMsg" class="toast-msg"></div>
@@ -1024,6 +1060,8 @@
     let activeFrameIndex = -1;
     let frameIdCounter = 0;
     let layerIdCounter = 0;
+
+    let pendingDroppedImage = null;
 
     const logoIcon = document.getElementById('logoIcon');
     const widthInput = document.getElementById('widthInput');
@@ -1109,13 +1147,55 @@
     const toggleBottomBtn = document.getElementById('toggleBottomBtn');
 
     const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+
+    const toolbar = document.querySelector('.mini-nav-toolbar');
+    const handle = document.querySelector('.drag-handle');
+
+    let isDragging = false;
+    let startX, startY;
+
+    handle.addEventListener('mousedown', (e) => {
+      isDragging = true;
+      startX = e.clientX - toolbar.offsetLeft;
+      startY = e.clientY - toolbar.offsetTop;
+      e.preventDefault();
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    function onMouseMove(e) {
+      if (!isDragging) return;
+      e.preventDefault();
+      let newX = e.clientX - startX;
+      let newY = e.clientY - startY;
+      
+      const parentRect = document.querySelector('.workspace-wrapper').getBoundingClientRect();
+      const toolbarRect = toolbar.getBoundingClientRect();
+      
+      const minX = 0;
+      const minY = 0;
+      const maxX = parentRect.width - toolbarRect.width;
+      const maxY = parentRect.height - toolbarRect.height-30;
+      
+      newX = Math.max(minX, Math.min(newX, maxX));
+      newY = Math.max(minY, Math.min(newY, maxY));
+      
+      toolbar.style.left = `${newX}px`;
+      toolbar.style.top = `${newY}px`;
+    }
+
+    function onMouseUp() {
+      isDragging = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+
     const mainHeader = document.getElementById('mainHeader');
     toggleHeaderBtn.addEventListener('click', () => {
       mainHeader.classList.toggle('collapsed');
       toggleHeaderBtn.innerText = mainHeader.classList.contains('collapsed') ? '▼ ' : '▲ ';
     });
 
-    // ★ 패널 토글 및 버튼 활성화 효과 연동 ★
     togglePostBtn.addEventListener('click', () => {
       postPanel.classList.toggle('collapsed');
       togglePostBtn.classList.toggle('active', !postPanel.classList.contains('collapsed'));
@@ -1132,6 +1212,74 @@
         postPanel.classList.add('collapsed');
         togglePostBtn.classList.remove('active');
       }
+    });
+
+    const splitImageModal = document.getElementById('splitImageModal');
+    const splitTargetWidth = document.getElementById('splitTargetWidth');
+    const splitOriginalSizeInfo = document.getElementById('splitOriginalSizeInfo');
+    const splitColsInput = document.getElementById('splitColsInput');
+    const splitRowsInput = document.getElementById('splitRowsInput');
+    const cancelSplitBtn = document.getElementById('cancelSplitBtn');
+    const confirmSplitBtn = document.getElementById('confirmSplitBtn');
+
+    cancelSplitBtn.addEventListener('click', () => {
+      splitImageModal.style.display = 'none';
+      pendingDroppedImage = null;
+    });
+
+    confirmSplitBtn.addEventListener('click', () => {
+      if (!pendingDroppedImage) return;
+
+      const img = pendingDroppedImage;
+      const origW = img.width;
+      const origH = img.height;
+
+      const targetW = parseInt(splitTargetWidth.value) || origW;
+      const ratio = origH / origW;
+      const targetH = Math.round(targetW * ratio);
+
+      const cols = Math.max(1, parseInt(splitColsInput.value) || 1);
+      const rows = Math.max(1, parseInt(splitRowsInput.value) || 1);
+
+      const sliceW = Math.floor(targetW / cols);
+      const sliceH = Math.floor(targetH / rows);
+
+      const fullCanvas = document.createElement('canvas');
+      fullCanvas.width = targetW;
+      fullCanvas.height = targetH;
+      const fullCtx = fullCanvas.getContext('2d');
+      fullCtx.imageSmoothingEnabled = false;
+      fullCtx.drawImage(img, 0, 0, targetW, targetH);
+
+      resizeCanvasSmart(sliceW, sliceH, true);
+
+      frames.forEach(f => f.layers.forEach(l => l.canvas.remove()));
+      frames = [];
+      frameListEl.innerHTML = '';
+      layerListEl.innerHTML = '';
+      frameIdCounter = 0;
+      layerIdCounter = 0;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          addFrame();
+          const curF = frames[frames.length - 1];
+          const ctx = curF.layers[0].ctx;
+
+          ctx.clearRect(0, 0, sliceW, sliceH);
+          ctx.drawImage(
+            fullCanvas,
+            c * sliceW, r * sliceH, sliceW, sliceH,
+            0, 0, sliceW, sliceH
+          );
+          updateFramePreview(curF);
+        }
+      }
+
+      selectFrame(0);
+      splitImageModal.style.display = 'none';
+      pendingDroppedImage = null;
+      showToast(`이미지 분할 완료 (${cols}x${rows} 프레임 생성됨)`);
     });
 
     const previewModalBtn = document.getElementById('previewModalBtn');
@@ -2507,6 +2655,7 @@
       updateTransform();
     }, { passive: false });
 
+    // ★ 드래그 앤 드롭 시 분할 설정 모달 호출 ★
     canvasViewport.addEventListener('dragover', (e) => e.preventDefault());
     canvasViewport.addEventListener('drop', (e) => {
       e.preventDefault();
@@ -2520,12 +2669,12 @@
           reader.onload = (event) => {
             const img = new Image();
             img.onload = () => {
-              if (activeFrameIndex === -1) return;
-              resizeCanvasSmart(img.width, img.height, true);
-              const curFrame = frames[activeFrameIndex];
-              const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
-              ctx.drawImage(img, 0, 0);
-              updateActiveLayerPreview();
+              pendingDroppedImage = img;
+              splitTargetWidth.value = img.width;
+              splitOriginalSizeInfo.innerText = `원본: ${img.width} x ${img.height} px`;
+              splitColsInput.value = 1;
+              splitRowsInput.value = 1;
+              splitImageModal.style.display = 'flex';
             };
             img.src = event.target.result;
           };
@@ -2824,385 +2973,6 @@
     [brightnessInput, contrastInput, saturateInput, canvasOpacityInput].forEach(inp => {
       inp.addEventListener('input', updateCanvasFilters);
     });
-
-    addFrameBtn.addEventListener('click', addFrame);
-    addLayerBtn.addEventListener('click', addLayer);
-
-    playBtn.addEventListener('click', () => {
-      if (isPlaying) stopAnimation();
-      else startAnimation();
-    });
-
-    function startAnimation() {
-      if (frames.length <= 1) return;
-      isPlaying = true;
-      playBtn.innerText = '⏹ 정지';
-      playBtn.classList.add('playing');
-      updateOnionSkin();
-
-      let animFrameIdx = 0;
-      const fps = parseInt(fpsInput.value) || 6;
-
-      playInterval = setInterval(() => {
-        selectFrame(animFrameIdx);
-        animFrameIdx = (animFrameIdx + 1) % frames.length;
-      }, 1000 / fps);
-    }
-
-    function stopAnimation() {
-      isPlaying = false;
-      playBtn.innerText = '▶ 재생';
-      playBtn.classList.remove('playing');
-      if (playInterval) clearInterval(playInterval);
-      updateOnionSkin();
-    }
-
-    function renderFrameCanvas(frame, scale) {
-      const canvas = document.createElement('canvas');
-      canvas.width = gridWidth * scale;
-      canvas.height = gridHeight * scale;
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = false;
-
-      const baseC = document.createElement('canvas');
-      baseC.width = gridWidth;
-      baseC.height = gridHeight;
-      const baseCtx = baseC.getContext('2d');
-
-      frame.layers.forEach(l => { if (l.visible) baseCtx.drawImage(l.canvas, 0, 0); });
-      ctx.drawImage(baseC, 0, 0, canvas.width, canvas.height);
-
-      return canvas;
-    }
-
-    saveBtn.addEventListener('click', () => {
-      if (frames.length === 0) return;
-
-      const scale = parseInt(scaleSelect.value) || 1;
-      const maxCols = Math.max(1, parseInt(columnsInput.value) || 1);
-      
-      const cols = Math.min(frames.length, maxCols);
-      const rows = Math.ceil(frames.length / cols);
-
-      const scaledW = gridWidth * scale;
-      const scaledH = gridHeight * scale;
-
-      const sheetCanvas = document.createElement('canvas');
-      sheetCanvas.width = scaledW * cols;
-      sheetCanvas.height = scaledH * rows;
-      const sheetCtx = sheetCanvas.getContext('2d');
-      sheetCtx.imageSmoothingEnabled = false;
-
-      sheetCtx.filter = `brightness(${brightnessInput.value}%) contrast(${contrastInput.value}%) saturate(${saturateInput.value}%) opacity(${canvasOpacityInput.value}%)`;
-
-      frames.forEach((frame, idx) => {
-        const col = idx % cols;
-        const row = Math.floor(idx / cols);
-        const frameCanvas = renderFrameCanvas(frame, scale);
-        sheetCtx.drawImage(frameCanvas, col * scaledW, row * scaledH);
-      });
-
-      const fileName = (fileNameInput.value.trim() || 'pixel-art') + '.png';
-      const link = document.createElement('a');
-      link.download = fileName;
-      link.href = sheetCanvas.toDataURL('image/png');
-      link.click();
-    });
-
-    saveSeparateBtn.addEventListener('click', async () => {
-      if (frames.length === 0) return;
-
-      const scale = parseInt(scaleSelect.value) || 1;
-      const baseName = fileNameInput.value.trim() || 'pixel-art';
-
-      if (frames.length >= 2 && 'showDirectoryPicker' in window) {
-        try {
-          const parentDirectory = await window.showDirectoryPicker({ mode: 'readwrite' });
-          const targetDirHandle = await parentDirectory.getDirectoryHandle(baseName, { create: true });
-
-          for (let i = 0; i < frames.length; i++) {
-            const frameCanvas = renderFrameCanvas(frames[i], scale);
-            const blob = await new Promise(resolve => frameCanvas.toBlob(resolve, 'image/png'));
-            
-            const fileName = `${baseName}_${i + 1}.png`;
-            const fileHandle = await targetDirHandle.getFileHandle(fileName, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-          }
-          alert(`'${baseName}' 폴더에 개별 프레임이 모두 저장되었습니다.`);
-          return;
-        } catch (err) {
-          if (err.name === 'AbortError') return;
-          console.warn('File System Access API 사용 불가 또는 오류.', err);
-        }
-      }
-
-      frames.forEach((frame, i) => {
-        const frameCanvas = renderFrameCanvas(frame, scale);
-        const fileName = (frames.length >= 2) ? `${baseName}_${i + 1}.png` : `${baseName}.png`;
-
-        const link = document.createElement('a');
-        link.download = fileName;
-        link.href = frameCanvas.toDataURL('image/png');
-        link.click();
-      });
-    });
-
-    saveGifBtn.addEventListener('click', async () => {
-      if (frames.length === 0) return;
-
-      const scale = parseInt(scaleSelect.value) || 1;
-      const fps = parseInt(fpsInput.value) || 6;
-      const delay = Math.round(1000 / fps);
-
-      showToast('GIF 인코딩 중...');
-
-      try {
-        const response = await fetch('https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js');
-        const workerScript = await response.text();
-        const workerBlob = new Blob([workerScript], { type: 'application/javascript' });
-        const workerUrl = URL.createObjectURL(workerBlob);
-
-        const gif = new GIF({
-          workers: 2,
-          quality: 10,
-          width: gridWidth * scale,
-          height: gridHeight * scale,
-          workerScript: workerUrl
-        });
-
-        frames.forEach(frame => {
-          const frameCanvas = renderFrameCanvas(frame, scale);
-          gif.addFrame(frameCanvas, { delay: delay });
-        });
-
-        gif.on('finished', function(blob) {
-          const fileName = (fileNameInput.value.trim() || 'pixel-art') + '.gif';
-          const link = document.createElement('a');
-          link.download = fileName;
-          link.href = URL.createObjectURL(blob);
-          link.click();
-          showToast('GIF 저장 완료!');
-        });
-
-        gif.render();
-      } catch (err) {
-        console.error('GIF 생성 실패:', err);
-        alert('GIF 저장 중 오류가 발생했습니다.');
-      }
-    });
-
-    saveProjectBtn.addEventListener('click', () => {
-      if (frames.length === 0) return;
-
-      const projectData = {
-        version: "1.0",
-        width: gridWidth,
-        height: gridHeight,
-        fps: parseInt(fpsInput.value) || 6,
-        frames: frames.map(f => ({
-          id: f.id,
-          visible: f.visible,
-          activeLayerIndex: f.activeLayerIndex,
-          layers: f.layers.map(l => ({
-            id: l.id,
-            name: l.name,
-            visible: l.visible,
-            dataUrl: l.canvas.toDataURL()
-          }))
-        }))
-      };
-
-      const jsonStr = JSON.stringify(projectData);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const fileName = (fileNameInput.value.trim() || 'pixel-art') + '.pix';
-
-      const link = document.createElement('a');
-      link.download = fileName;
-      link.href = URL.createObjectURL(blob);
-      link.click();
-      showToast('프로젝트 파일이 저장되었습니다.');
-    });
-
-    loadProjectBtn.addEventListener('click', () => {
-      projectFileInput.click();
-    });
-
-    projectFileInput.addEventListener('change', (e) => {
-      if (e.target.files && e.target.files[0]) {
-        loadProjectFromFile(e.target.files[0]);
-      }
-      e.target.value = '';
-    });
-
-    function loadProjectFromFile(file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const projectData = JSON.parse(e.target.result);
-          if (!projectData.width || !projectData.height || !projectData.frames) {
-            alert('올바른 프로젝트 파일 형식(.pix)이 아닙니다.');
-            return;
-          }
-
-          frames.forEach(f => f.layers.forEach(l => l.canvas.remove()));
-          frames = [];
-          frameListEl.innerHTML = '';
-          layerListEl.innerHTML = '';
-
-          gridWidth = projectData.width;
-          gridHeight = projectData.height;
-          widthInput.value = gridWidth;
-          heightInput.value = gridHeight;
-          fpsInput.value = projectData.fps || 6;
-
-          updateContainerDimensions();
-          drawGrid();
-
-          let loadedFrameCount = 0;
-          const totalFrames = projectData.frames.length;
-
-          projectData.frames.forEach((fData) => {
-            const frameObj = {
-              id: fData.id,
-              visible: fData.visible,
-              layers: [],
-              activeLayerIndex: fData.activeLayerIndex,
-              blockEl: null,
-              imgPreviewEl: null
-            };
-
-            const block = document.createElement('div');
-            block.className = 'manage-block';
-            block.setAttribute('draggable', 'true');
-
-            const imgPreview = document.createElement('img');
-            imgPreview.className = 'block-preview';
-
-            const btnDel = document.createElement('div');
-            btnDel.className = 'block-btn btn-delete';
-            btnDel.innerText = '×';
-            btnDel.addEventListener('pointerdown', (evt) => { 
-              evt.stopPropagation(); evt.preventDefault();
-              deleteFrame(fData.id); 
-            });
-
-            const btnVis = document.createElement('div');
-            btnVis.className = 'block-btn btn-toggle-vis';
-            btnVis.innerText = '👁';
-            btnVis.addEventListener('pointerdown', (evt) => { 
-              evt.stopPropagation(); evt.preventDefault();
-              toggleFrameVisibility(fData.id); 
-            });
-
-            const numberTag = document.createElement('div');
-            numberTag.className = 'block-number';
-
-            block.appendChild(imgPreview);
-            block.appendChild(btnDel);
-            block.appendChild(btnVis);
-            block.appendChild(numberTag);
-
-            frameObj.blockEl = block;
-            frameObj.imgPreviewEl = imgPreview;
-
-            frames.push(frameObj);
-
-            block.addEventListener('dragstart', (evt) => {
-              draggedFrameIndex = frames.indexOf(frameObj);
-              block.classList.add('dragging');
-              evt.dataTransfer.effectAllowed = 'move';
-            });
-
-            block.addEventListener('dragend', () => {
-              block.classList.remove('dragging');
-              document.querySelectorAll('#frameList .manage-block').forEach(b => b.classList.remove('drag-over'));
-            });
-
-            block.addEventListener('dragover', (evt) => {
-              evt.preventDefault();
-              evt.dataTransfer.dropEffect = 'move';
-              block.classList.add('drag-over');
-            });
-
-            block.addEventListener('dragleave', () => {
-              block.classList.remove('drag-over');
-            });
-
-            block.addEventListener('drop', (evt) => {
-              evt.preventDefault();
-              block.classList.remove('drag-over');
-              const targetIndex = frames.indexOf(frameObj);
-
-              if (draggedFrameIndex !== null && draggedFrameIndex !== targetIndex) {
-                const movedFrame = frames.splice(draggedFrameIndex, 1)[0];
-                frames.splice(targetIndex, 0, movedFrame);
-
-                draggedFrameIndex = null;
-                renderFrameUI();
-                selectFrame(targetIndex);
-              }
-            });
-
-            block.addEventListener('pointerdown', (evt) => {
-              if (evt.target.classList.contains('block-btn')) return;
-              selectFrame(frames.indexOf(frameObj));
-            });
-
-            let loadedLayerCount = 0;
-            const totalLayers = fData.layers.length;
-
-            fData.layers.forEach((lData) => {
-              const c = document.createElement('canvas');
-              c.className = 'render-canvas';
-              c.width = gridWidth;
-              c.height = gridHeight;
-
-              const aspectRatio = gridHeight / gridWidth;
-              c.style.width = `${DISPLAY_SIZE}px`;
-              c.style.height = `${DISPLAY_SIZE * aspectRatio}px`;
-
-              canvasContainer.insertBefore(c, previewCanvas);
-
-              const ctx = c.getContext('2d', { willReadFrequently: true });
-              const layerObj = { 
-                id: lData.id, 
-                name: lData.name,
-                visible: lData.visible, 
-                canvas: c, 
-                ctx: ctx, 
-                blockEl: null, 
-                imgPreviewEl: null 
-              };
-
-              frameObj.layers.push(layerObj);
-
-              const img = new Image();
-              img.onload = () => {
-                ctx.drawImage(img, 0, 0);
-                loadedLayerCount++;
-                if (loadedLayerCount === totalLayers) {
-                  updateFramePreview(frameObj);
-                  loadedLayerCount++;
-                  if (loadedLayerCount === totalFrames) {
-                    renderFrameUI();
-                    selectFrame(0);
-                    showToast('프로젝트를 성공적으로 불러왔습니다.');
-                  }
-                }
-              };
-              img.src = lData.dataUrl;
-            });
-          });
-
-        } catch (err) {
-          alert('프로젝트 파일을 불러오는 중 오류가 발생했습니다.');
-          console.error(err);
-        }
-      };
-      reader.readAsText(file);
-    }
 
     initEditor();
   </script>
