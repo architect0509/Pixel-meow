@@ -572,17 +572,18 @@
     .settings-panel.collapsed { margin-right: -240px; }
 
     .toggle-settings-btn {
-      width: 32px;
-      height: 32px;
+      width: 40px;
+      height: 40px;
       background: #3a3a3a;
       border: 1px solid #555;
       color: #fff;
-      border-radius: 15px;
+      border-radius: 6px;
       cursor: pointer;
       display: flex;
       justify-content: center;
       align-items: center;
       font-size: 14px;
+      margin-top: 6px;
     }
 
     .toggle-settings-btn:hover { background: #4a4a4a; }
@@ -871,8 +872,9 @@
       </main>
 
       <div class="sidebar sidebar-right">
-        <button class="toggle-settings-btn" id="toggleSettingsBtn" title="저장 패널" style="margin-top: 20px; width: 50px; height: 50px;"><img src="./Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
-        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리 패널" style="margin-top: 10px; width: 50px; height: 50px;"><img src="./Asset/setting.png" style="width: 23px; height: 25px;" alt="Settings"></button>
+        <span class="section-title">관리</span>
+        <button class="toggle-settings-btn" id="toggleSettingsBtn" title="저장"><img src="./Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
+        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리/미리보기"><img src="./Asset/setting.png" style="width: 23px; height: 25px;" alt="Settings"></button>
 
         <div class="divider" style="margin-top: 20px;"></div>
         <span class="section-title">레이어</span>
@@ -905,7 +907,10 @@
         </div>
         <div class="divider" style="margin: 10px 0;"></div>
         <button class="btn-project" id="previewModalBtn" style="background:#2e7d32; color:#fff; border-color:#388e3c;">미리보기 재생</button>
-        <div style="color: #727272; text-align: center; margin-top: 25px; margin-bottom: 10px; font-size: 12px;">
+        <div style="text-align: center; margin-top: 4px;">
+          <span id="changelogModalBtn" style="font-size: 11px; color: #aaaaaa; text-decoration: underline; cursor: pointer;">업데이트 내역 보기</span>
+        </div>
+        <div style="color: #727272; text-align: center; margin-top: 20px; margin-bottom: 10px; font-size: 12px;">
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
@@ -978,6 +983,58 @@
     <button id="closePreviewModal" style="background:#d9534f; color:#fff; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">미리보기 닫기</button>
   </div>
 
+  <!-- 업데이트 내역 모달 창 -->
+  <div id="changelogModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; z-index: 9999; flex-direction: column; justify-content: center; align-items: center; gap: 16px;">
+    <div style="background: #2b2b2b; border: 1px solid #555; border-radius: 8px; padding: 24px; width: 420px; max-height: 70vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 12px;">
+      <span style="font-size: 15px; font-weight: bold; color: #e9bd0c; text-align: center; margin-bottom: 4px;">업데이트 내역</span>
+      
+      <div style="font-size: 12px; line-height: 1.5; color: #ccc; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <strong style="color: #fff;">v1.2.3</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>드로잉 중 선이 끊어지는 문제 해결</li>
+            <li>업데이트 내역 보기 추가</li>
+            <li>UI 일부 개선</li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color: #fff;">v1.2.2</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>저장 관련 문제 해결</li>
+            <li>미리보기 기본 설정 배경색을 회색으로 변경</li>
+            <li>애니메이션 그룹 재생이 동작하지 않는 문제 해결</li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color: #fff;">v1.2.1</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>Ctrl+C, Ctrl+V, Ctrl+Z가 비정상적으로 작동되는 문제 해결</li>
+            <li>선택영역 지정 후 Delete 또는 BackSpace키를 통한 삭제 기능 제공</li>
+            <li>레이어 추가&프레임 추가가 이루어지지 않는 문제 수정</li>
+            <li>UI 일부 개선</li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color: #fff;">v1.2.0</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>후처리 패널의 아이콘 화질개선</li>
+            <li>미니 네비게이션 툴바 드래그로 이동 가능하도록 개선</li>
+            <li>png파일을 드래그를 통해 가져올 경우 n등분하여 적용 및 크기를 조절하여 적용 가능하도록 안내 창 추가</li>
+          </ul>
+        </div>
+        <div>
+          <strong style="color: #fff;">v1.1.0</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>저장 패널에서 후처리 기능을 독립적인 패널로 분리</li>
+            <li>미리보기 기능 추가 / 상단 리본 접기&펼치기 기능 추가</li>
+            <li>UI 일부 개선</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <button id="closeChangelogModal" style="background:#d9534f; color:#fff; border:none; padding:8px 20px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:13px;">닫기</button>
+  </div>
+
   <div id="splitImageModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; z-index: 9999; justify-content: center; align-items: center;">
     <div style="background: #333; border: 1px solid #555; border-radius: 10px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 8px 25px rgba(0,0,0,0.8);">
       <span style="font-size: 13px; font-weight: bold; color: #e9bd0c; text-align: center;">이미지 분할 및 첨부 설정</span>
@@ -1017,9 +1074,11 @@
     let currentColor = '#ffffff';
     let currentAlpha = 1.0; 
     let isDrawing = false;
-    let lastDrawnCoords = null;
     let lineStartCoords = null;
     let shapeStartCoords = null;
+
+    let prevDrawX = null;
+    let prevDrawY = null;
 
     let toolOptions = {
       pencilSize: 1,
@@ -1122,6 +1181,11 @@
     const togglePostBtn = document.getElementById('togglePostBtn');
     const postPanel = document.getElementById('postPanel');
 
+    // 업데이트 내역 모달 관련 요소 연결
+    const changelogModalBtn = document.getElementById('changelogModalBtn');
+    const changelogModal = document.getElementById('changelogModal');
+    const closeChangelogModal = document.getElementById('closeChangelogModal');
+
     const brightnessInput = document.getElementById('brightnessInput');
     const contrastInput = document.getElementById('contrastInput');
     const saturateInput = document.getElementById('saturateInput');
@@ -1214,6 +1278,14 @@
         postPanel.classList.add('collapsed');
         togglePostBtn.classList.remove('active');
       }
+    });
+
+    // 업데이트 내역 모달 열기/닫기 이벤트 연결
+    changelogModalBtn.addEventListener('click', () => {
+      changelogModal.style.display = 'flex';
+    });
+    closeChangelogModal.addEventListener('click', () => {
+      changelogModal.style.display = 'none';
     });
 
     const splitImageModal = document.getElementById('splitImageModal');
@@ -2441,6 +2513,40 @@
       }
     }
 
+    // 펜/지우개 빠른 움직임 시 끊김 현상을 없애주는 촘촘한 선 보간 함수
+    function drawLineSegment(x0, y0, x1, y1) {
+      if (activeFrameIndex === -1) return;
+      const curFrame = frames[activeFrameIndex];
+      const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
+
+      const sz = (currentTool === 'eraser') ? toolOptions.eraserSize : ((currentTool === 'pencil') ? toolOptions.pencilSize : 1);
+      const offset = Math.floor((sz - 1) / 2);
+
+      const dx = Math.abs(x1 - x0);
+      const dy = Math.abs(y1 - y0);
+      const sx = (x0 < x1) ? 1 : -1;
+      const sy = (y0 < y1) ? 1 : -1;
+      let err = dx - dy;
+
+      while (true) {
+        if (x0 >= 0 && x0 < gridWidth && y0 >= 0 && y0 < gridHeight) {
+          if (currentTool === 'pencil') {
+            ctx.globalAlpha = currentAlpha;
+            ctx.fillStyle = currentColor;
+            ctx.fillRect(x0 - offset, y0 - offset, sz, sz);
+            ctx.globalAlpha = 1.0;
+          } else if (currentTool === 'eraser') {
+            ctx.clearRect(x0 - offset, y0 - offset, sz, sz);
+          }
+        }
+
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x0 += sx; }
+        if (e2 < dx) { err += dx; y0 += sy; }
+      }
+    }
+
     canvasViewport.addEventListener('pointerdown', (e) => {
       canvasViewport.setPointerCapture(e.pointerId);
 
@@ -2514,14 +2620,16 @@
 
       saveHistory();
       isDrawing = true;
-      lastDrawnCoords = null;
+
+      prevDrawX = coords.x;
+      prevDrawY = coords.y;
 
       previewCtx.clearRect(0, 0, gridWidth, gridHeight);
 
       if (currentTool === 'line') lineStartCoords = coords;
       else if (currentTool === 'shape') shapeStartCoords = coords;
       else if (currentTool === 'bucket') floodFill(coords.x, coords.y, currentColor);
-      else drawDot(coords.x, coords.y);
+      else drawLineSegment(coords.x, coords.y, coords.x, coords.y);
     });
 
     window.addEventListener('pointermove', (e) => {
@@ -2595,7 +2703,14 @@
         shapePixels.forEach(p => previewCtx.fillRect(p.x, p.y, 1, 1));
         previewCtx.globalAlpha = 1.0;
       } else if (currentTool === 'pencil' || currentTool === 'eraser') {
-        drawDot(coords.x, coords.y);
+        if (prevDrawX !== null && prevDrawY !== null) {
+          drawLineSegment(prevDrawX, prevDrawY, coords.x, coords.y);
+        } else {
+          drawLineSegment(coords.x, coords.y, coords.x, coords.y);
+        }
+        prevDrawX = coords.x;
+        prevDrawY = coords.y;
+        updateActiveLayerPreview();
       }
     });
 
@@ -2645,7 +2760,8 @@
 
       if (!isDrawing) return;
       isDrawing = false;
-      lastDrawnCoords = null;
+      prevDrawX = null;
+      prevDrawY = null;
 
       const coords = getCoords(e);
       const curFrame = frames[activeFrameIndex];
@@ -2862,7 +2978,6 @@
       addLayer();
     });
 
-    // ★ 애니메이션 그룹 재생 버튼 이벤트 리스너 추가 ★
     playBtn.addEventListener('click', () => {
       if (frames.length === 0) return;
       isPlaying = !isPlaying;
@@ -2871,7 +2986,6 @@
         playBtn.innerText = '정지';
         playBtn.classList.add('playing');
         
-        // 편집 중 어니언 스킨 숨기기
         onionPrevCanvas.style.opacity = 0;
         onionNextCanvas.style.opacity = 0;
 
@@ -2897,7 +3011,6 @@
           playInterval = null;
         }
 
-        // 원래 선택된 프레임 상태로 복구
         if (activeFrameIndex >= 0) {
           selectFrame(activeFrameIndex);
         }
@@ -3210,34 +3323,6 @@
         }
       };
       reader.readAsText(file);
-    }
-
-    function drawDot(x, y) {
-      if (x < 0 || x >= gridWidth || y < 0 || y >= gridHeight) return;
-      if (activeFrameIndex === -1) return;
-
-      if (lastDrawnCoords && lastDrawnCoords.x === x && lastDrawnCoords.y === y) {
-        return;
-      }
-      lastDrawnCoords = { x, y };
-
-      const curFrame = frames[activeFrameIndex];
-      const ctx = curFrame.layers[curFrame.activeLayerIndex].ctx;
-
-      if (currentTool === 'pencil') {
-        const sz = toolOptions.pencilSize;
-        const offset = Math.floor((sz - 1) / 2);
-        ctx.globalAlpha = currentAlpha;
-        ctx.fillStyle = currentColor;
-        ctx.fillRect(x - offset, y - offset, sz, sz);
-        ctx.globalAlpha = 1.0;
-        updateActiveLayerPreview();
-      } else if (currentTool === 'eraser') {
-        const sz = toolOptions.eraserSize;
-        const offset = Math.floor((sz - 1) / 2);
-        ctx.clearRect(x - offset, y - offset, sz, sz);
-        updateActiveLayerPreview();
-      }
     }
 
     function getLinePixels(x0, y0, x1, y1) {
