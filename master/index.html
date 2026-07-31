@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel-meow - 내 작품 갤러리</title>
+  <link rel="icon" href="./Asset/IconFit.png" type="image/png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: #282828;
+      color: #cccccc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    top-nav {
+      background-color: #383838;
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #1e1e1e;
+    }
+
+    .nav-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #e9bd0c;
+    }
+
+    container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      gap: 30px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .logo-section {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-img {
+      width: 100px;
+      height: 100px;
+      image-rendering: pixelated;
+    }
+
+    .logo-title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #fff;
+      letter-spacing: 1px;
+    }
+
+    .logo-desc {
+      font-size: 13px;
+      color: #888;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background-color: #444;
+      margin: 10px 0;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      width: 100%;
+    }
+
+    /* 에디터 이동용 플러스 블록 (에디터 내 레이어/프레임 추가 버튼 스타일 차용) */
+    .btn-add-art-card {
+      position: relative;
+      width: 100%;
+      height: 247px; /* 프리뷰+인포 높이와 동일하게 맞춤 */
+      background-color: #333333;
+      border: 2px dashed #555;
+      border-radius: 8px;
+      color: #aaa;
+      font-size: 40px;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      background-image: 
+        linear-gradient(to right, #333 50%, #2a2a2a 50%), 
+        linear-gradient(to bottom, #333 50%, #2a2a2a 50%);
+      background-blend-mode: difference;
+      background-size: 12px 12px;
+      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-add-art-card:hover {
+      background-color: #3a3a3a;
+      color: #fff;
+      border-color: #e9bd0c;
+      transform: translateY(-4px);
+    }
+
+    .btn-add-art-text {
+      font-size: 13px;
+      color: #aaa;
+      font-weight: bold;
+    }
+
+    .art-card {
+      background-color: #333333;
+      border: 1px solid #444;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .art-card:hover {
+      transform: translateY(-4px);
+      border-color: #e9bd0c;
+    }
+
+    .art-preview-wrapper {
+      width: 100%;
+      height: 200px;
+      background-color: #1e1e1e;
+      background-image: 
+        linear-gradient(45deg, #2d2d2d 25%, transparent 25%), 
+        linear-gradient(-45deg, #2d2d2d 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #2d2d2d 75%), 
+        linear-gradient(-45deg, transparent 75%, #2d2d2d 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+    }
+
+    .art-preview-img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .art-info {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .art-title {
+      font-size: 14px;
+      font-weight: bold;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .art-author {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .no-arts {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 0;
+      color: #777;
+      font-size: 14px;
+    }
+  </style>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD_pvFCpVjc0enadMXuHbMcv4TC9NSLdHc",
+      authDomain: "pixel-meow-project.firebaseapp.com",
+      projectId: "pixel-meow-project",
+      storageBucket: "pixel-meow-project.firebasestorage.app",
+      messagingSenderId: "894944756752",
+      appId: "1:894944756752:web:77a8055b615590a39ff695",
+      measurementId: "G-W9K4ZVSHVY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadMyGallery() {
+      const gridEl = document.getElementById('galleryGrid');
+
+      // 1. 가장 먼저 '에디터로 이동하는 + 블록'을 그리드 맨 앞에 생성
+      gridEl.innerHTML = `
+        <a href="./canvas/canvas.html" id="newArtCardBtn" class="btn-add-art-card" title="새 작품 그리러 가기">
+          <span>+</span>
+          <span class="btn-add-art-text">새 작품 만들기</span>
+        </a>
+      `;
+
+      // 이전에 "이어서 작업하기"로 넘어갔던 흔적(sessionStorage)이 남아있으면
+      // 새 캔버스를 열어도 예전 작품이 불러와지는 문제가 있어, 진짜 새 작품을 시작할 때는
+      // 관련 세션 값을 확실히 비워준다.
+      document.getElementById('newArtCardBtn').addEventListener('click', () => {
+        sessionStorage.removeItem('edit_target_art_id');
+        sessionStorage.removeItem('edit_target_art_data');
+        sessionStorage.removeItem('current_art_id');
+      });
+
+      const myArtIds = JSON.parse(localStorage.getItem('my_pixel_arts') || '[]');
+
+      if (myArtIds.length === 0) {
+        return; // 작품이 없어도 + 블록은 유지됨
+      }
+
+      try {
+        const querySnapshot = await getDocs(collection(db, "arts"));
+        const allArtsMap = {};
+        querySnapshot.forEach((doc) => {
+          allArtsMap[doc.id] = doc.data();
+        });
+
+        myArtIds.forEach((id) => {
+          const art = allArtsMap[id];
+          if (art) {
+            const card = document.createElement('div');
+            card.className = 'art-card';
+            
+            card.addEventListener('click', () => {
+              window.location.href = `./detail.html?id=${id}`;
+            });
+
+            card.innerHTML = `
+              <div class="art-preview-wrapper">
+                <img src="${art.preview}" class="art-preview-img" alt="Pixel Art">
+              </div>
+              <div class="art-info">
+                <span class="art-title">${art.title || '제목 없음'}</span>
+                <span class="art-author">by. ${art.author || '나'}</span>
+              </div>
+            `;
+            gridEl.appendChild(card);
+          }
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', loadMyGallery);
+  </script>
+</head>
+<body>
+
+  <top-nav>
+    <div class="nav-title">Pixel-meow</div>
+  </top-nav>
+
+  <container>
+    <div class="logo-section">
+      <img src="./Asset/Icon.png" class="logo-img" alt="Logo">
+      <h1 class="logo-title">내 작품 갤러리</h1>
+      <p class="logo-desc">이 브라우저에서 내가 공유하고 등록한 픽셀 아트 모음입니다.</p>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="gallery-grid" id="galleryGrid">
+    </div>
+  </container>
+
+</body>
+</html>
