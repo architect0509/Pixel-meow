@@ -2020,6 +2020,14 @@ let gridWidth = 16;
       } else if (key === 'r') {
         panX = 0; panY = 0; zoomScale = 1;
         updateTransform();
+      } else if (key === 'z' && !e.ctrlKey) {
+        if (frames.length > 0 && activeFrameIndex > 0) {
+          selectFrame(activeFrameIndex - 1);
+        }
+      } else if (key === 'c' && !e.ctrlKey) {
+        if (frames.length > 0 && activeFrameIndex < frames.length - 1) {
+          selectFrame(activeFrameIndex + 1);
+        }
       } else if (e.ctrlKey && key === 'c') {
         e.preventDefault();
         if (activeFrameIndex === -1 || !selectionRect) return;
@@ -2076,6 +2084,51 @@ let gridWidth = 16;
 
     addFrameBtn.addEventListener('click', () => {
       addFrame();
+    });
+
+    // --- 상단 리본 그룹 표시/숨김 (후처리 패널에서 켜고 끄기) ---
+    (function setupRibbonToggles() {
+      const RIBBON_MAP = {
+        toggleRibbonCanvasSettings: 'ribbonCanvasSettings',
+        toggleRibbonAnimation: 'ribbonAnimation',
+        toggleRibbonEditAlign: 'ribbonEditAlign',
+        toggleRibbonPageManage: 'ribbonPageManage'
+      };
+      const STORAGE_KEY = 'pixelmeow_ribbon_visibility';
+
+      let savedState = {};
+      try {
+        savedState = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      } catch (e) {
+        savedState = {};
+      }
+
+      Object.entries(RIBBON_MAP).forEach(([checkboxId, groupId]) => {
+        const checkbox = document.getElementById(checkboxId);
+        const group = document.getElementById(groupId);
+        if (!checkbox || !group) return;
+
+        // 저장된 상태가 있으면 반영, 없으면 기본값(표시) 유지
+        if (Object.prototype.hasOwnProperty.call(savedState, groupId)) {
+          const visible = savedState[groupId];
+          checkbox.checked = visible;
+          group.style.display = visible ? '' : 'none';
+        }
+
+        checkbox.addEventListener('change', () => {
+          group.style.display = checkbox.checked ? '' : 'none';
+          savedState[groupId] = checkbox.checked;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
+        });
+      });
+    })();
+
+    // --- 텍스트/숫자 입력창 클릭 시 값 전체 선택 (키보드로 값 바꾸기 편하게) ---
+    document.addEventListener('mouseup', (e) => {
+      const t = e.target;
+      if (t && t.tagName === 'INPUT' && (t.type === 'text' || t.type === 'number')) {
+        t.select();
+      }
     });
 
     addLayerBtn.addEventListener('click', () => {

@@ -12,7 +12,7 @@
 
   <header id="mainHeader">
     <img src="../Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; margin-top: 6px; cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
-    <div class="header-group">
+    <div class="header-group" id="ribbonCanvasSettings">
       <span class="header-group-title">캔버스 설정</span>
       <div class="header-row">
         <label class="drag-label" for="widthInput">가로:</label>
@@ -32,7 +32,7 @@
       </div>
     </div>
 
-    <div class="header-group">
+    <div class="header-group" id="ribbonAnimation">
       <span class="header-group-title">애니메이션</span>
       <div class="header-row">
         <label>이전 프레임:</label>
@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <div class="header-group">
+    <div class="header-group" id="ribbonEditAlign">
       <span class="header-group-title">편집 / 정렬</span>
       <div class="header-row">
         <button id="flipHorizontalBtn" title="좌우 반전"></button>
@@ -86,7 +86,7 @@
       </div>
     </div>
 
-    <div class="header-group">
+    <div class="header-group" id="ribbonPageManage">
       <span class="header-group-title">페이지 관리</span>
       <button class="btn-apply" id="goGalleryBtn" title="새 창으로 갤러리 열기">내 갤러리로 이동</button>
       <div class="header-row" style="gap: 6px;">
@@ -136,7 +136,7 @@
       <div class="sidebar sidebar-right">
         <span class="section-title">관리</span>
         <button class="toggle-settings-btn" id="toggleSettingsBtn" title="저장"><img src="../Asset/save.png" style="width: 30px; height: 30px;" alt="Settings"></button>
-        <button class="toggle-settings-btn" id="togglePostBtn" title="후처리/미리보기"><img src="../Asset/setting.png" style="width: 23px; height: 25px;" alt="Settings"></button>
+        <button class="toggle-settings-btn" id="togglePostBtn" title="설정"><img src="../Asset/setting.png" style="width: 23px; height: 25px;" alt="Settings"></button>
 
         <div class="divider" style="margin-top: 20px;"></div>
         <span class="section-title">레이어</span>
@@ -168,6 +168,22 @@
           <input type="range" id="canvasOpacityInput" min="0" max="100" value="100">
         </div>
         <div class="divider" style="margin: 10px 0;"></div>
+        <span class="section-title">상단 리본 표시</span>
+        <div class="panel-group" style="gap: 6px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:#ccc;">
+            <input type="checkbox" id="toggleRibbonCanvasSettings" checked> 캔버스 설정
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:#ccc;">
+            <input type="checkbox" id="toggleRibbonAnimation" checked> 애니메이션
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:#ccc;">
+            <input type="checkbox" id="toggleRibbonEditAlign" checked> 편집 / 정렬
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; color:#ccc;">
+            <input type="checkbox" id="toggleRibbonPageManage" checked> 페이지 관리
+          </label>
+        </div>
+        <div class="divider" style="margin: 10px 0;"></div>
         <button class="btn-project" id="previewModalBtn" style="background:#2e7d32; color:#fff; border-color:#388e3c;">미리보기 재생</button>
         <div style="text-align: center; margin-top: 4px;">
           <span id="changelogModalBtn" style="font-size: 11px; color: #aaaaaa; text-decoration: underline; cursor: pointer;">업데이트 내역 보기</span>
@@ -176,7 +192,7 @@
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
-          Version: 2.0.0
+          Version: 2.0.1
         </div>
       </div>
 
@@ -253,6 +269,15 @@
     <div style="background: #2b2b2b; border: 1px solid #555; border-radius: 8px; padding: 24px; width: 420px; max-height: 70vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 12px;">
       <span style="font-size: 15px; font-weight: bold; color: #e9bd0c; text-align: center; margin-bottom: 4px;">업데이트 내역</span>
       <div style="font-size: 12px; line-height: 1.5; color: #ccc; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <strong style="color: #fff;">v2.0.1</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>상단 리본의 input상자 클릭 시 자동선택 되도록 개선</li>
+            <li>프레임간 이동 단축키 추가 (Z키, C키)</li>
+            <li>후처리/미리보기 패널버튼 설정 패널로 이름변경 - 상단 리본 그룹 On/Off체크박스 추가</li>
+            <li>UI 일부 개선</li>
+          </ul>
+        </div>
         <div>
           <strong style="color: #fff;">v2.0.0</strong>
           <ul style="padding-left: 18px; margin-top: 2px;">
@@ -370,7 +395,7 @@
   <button id="pasteClipboardBtn" title="클립보드 이미지 붙여넣기" style="
     position: fixed;
     bottom: 95px;
-    right: 100px;
+    right: 350px;
     width: 140px;
     height: 40px;
     background-color: #383838;

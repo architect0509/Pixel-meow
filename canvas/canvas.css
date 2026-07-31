@@ -740,6 +740,10 @@ main {
   cursor: pointer;
 }
 
+[type="checkbox"] {
+    accent-color: #e9bd0c;
+}
+
 #flipHorizontalBtn { background-image: url('../Asset/Btn1.png'); }
 #flipVerticalBtn   { background-image: url('../Asset/Btn2.png'); }
 #rotateBtn         { background-image: url('../Asset/Btn3.png'); }
