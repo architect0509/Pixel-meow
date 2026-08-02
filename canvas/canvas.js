@@ -364,6 +364,44 @@ let gridWidth = 16;
       }
     });
 
+    // --- 클립보드 붙여넣기 버튼을 우측 사이드바/설정 패널에 자동으로 밀착시키기 ---
+    (function setupPasteBtnAutoPosition() {
+      const pasteBtn = document.getElementById('pasteClipboardBtn');
+      const sidebarRightEl = document.querySelector('.sidebar-right');
+      if (!pasteBtn || !sidebarRightEl) return;
+
+      const GAP = 14; // 패널 왼쪽 끝과의 여백
+
+      function reposition() {
+        const rect = sidebarRightEl.getBoundingClientRect();
+        const rightOffset = Math.max(10, Math.round(window.innerWidth - rect.left + GAP));
+        pasteBtn.style.right = rightOffset + 'px';
+      }
+
+      // 패널이 슬라이드 애니메이션(0.25초) 중일 때도 버튼이 함께 따라 움직이도록
+      // 짧은 시간 동안 프레임마다 재계산
+      let animFrameId = null;
+      function animateReposition(duration = 320) {
+        const startTime = performance.now();
+        function step(now) {
+          reposition();
+          if (now - startTime < duration) {
+            animFrameId = requestAnimationFrame(step);
+          }
+        }
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      window.addEventListener('resize', reposition);
+      togglePostBtn.addEventListener('click', () => animateReposition());
+      toggleSettingsBtn.addEventListener('click', () => animateReposition());
+
+      reposition();
+      // 폰트/레이아웃이 완전히 자리잡은 뒤 한 번 더 보정
+      setTimeout(reposition, 150);
+    })();
+
     changelogModalBtn.addEventListener('click', () => {
       changelogModal.style.display = 'flex';
     });
@@ -1808,7 +1846,7 @@ let gridWidth = 16;
 
       if (isPanning) {
         isPanning = false;
-        canvasViewport.style.cursor = (currentTool === 'hand') ? 'grab' : 'default';
+        canvasViewport.style.cursor = (currentTool === 'hand') ? 'grab' : '';
         return;
       }
 
@@ -1891,6 +1929,8 @@ let gridWidth = 16;
     }, { passive: false });
 
     canvasViewport.addEventListener('dragover', (e) => e.preventDefault());
+    // 펜/지우개 등으로 작업 중 우클릭하면 브라우저 기본 메뉴(이미지 저장/복사 등)가 뜨는 문제 방지
+    canvasViewport.addEventListener('contextmenu', (e) => e.preventDefault());
     canvasViewport.addEventListener('drop', (e) => {
       e.preventDefault();
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
@@ -2815,7 +2855,7 @@ let gridWidth = 16;
         handToolBtn.classList.add('active');
         canvasViewport.style.cursor = 'grab';
       } else {
-        canvasViewport.style.cursor = 'default';
+        canvasViewport.style.cursor = '';
       }
       if (tool === 'select') selectToolBtn.classList.add('active');
       if (tool === 'move') moveToolBtn.classList.add('active');
