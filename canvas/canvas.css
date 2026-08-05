@@ -770,3 +770,68 @@ main {
 }
 
 #previewCanvas, #gridCanvas, #selectionCanvas { pointer-events: none; }
+
+.palette-color-swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 4px;
+  border: 1px solid #555;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  min-width: 16px;
+  max-width: 40;
+}
+
+.palette-color-swatch:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 6px rgba(233, 189, 12, 0.6);
+}
+
+.palette-panel.is-dragging {
+  transition: none !important;
+}
+
+#paletteHandle:active {
+  cursor: grabbing !important;
+}
+
+.pencil-size-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pencil-size-input-row,
+.pencil-size-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.size-quick-btn {
+  min-width: 28px;
+  height: 24px;
+  padding: 0 6px;
+  background: #555;
+  color: #fff;
+  border: 1px solid #666;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: bold;
+  transition: all 0.15s ease;
+}
+
+.size-quick-btn:hover {
+  background: #666;
+}
+
+.size-quick-btn.active {
+  background: #e9bd0c;
+  color: #000;
+  border-color: #c89b08;
+  font-weight: bold;
+}

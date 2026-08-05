@@ -51,6 +51,7 @@ let gridWidth = 16;
     let activeFrameIndex = -1;
     let frameIdCounter = 0;
     let layerIdCounter = 0;
+    let currentPlayingFrameIndex = 0;
 
     let pendingDroppedImage = null;
 
@@ -115,6 +116,7 @@ let gridWidth = 16;
     const settingsPanel = document.getElementById('settingsPanel');
     const togglePostBtn = document.getElementById('togglePostBtn');
     const postPanel = document.getElementById('postPanel');
+    const palettePanel = document.getElementById('palettePanel');
 
     const changelogModalBtn = document.getElementById('changelogModalBtn');
     const changelogModal = document.getElementById('changelogModal');
@@ -906,6 +908,55 @@ let gridWidth = 16;
       updateActiveLayerPreview();
     });
 
+    function renderThicknessOptions({ inputId, label, value, onChange }) {
+      toolRibbonContent.innerHTML = `
+        <div class="pencil-size-option">
+          <div class="pencil-size-input-row">
+            <label class="drag-label" for="${inputId}">${label}:</label>
+            <input type="number" id="${inputId}" value="${value}" min="1" max="10">
+          </div>
+          <div class="pencil-size-buttons">
+            <button class="size-quick-btn" data-size="1">1</button>
+            <button class="size-quick-btn" data-size="2">2</button>
+            <button class="size-quick-btn" data-size="3">3</button>
+            <button class="size-quick-btn" data-size="4">4</button>
+          </div>
+        </div>
+      `;
+
+      const input = document.getElementById(inputId);
+      const updateButtonStates = () => {
+        document.querySelectorAll('.size-quick-btn').forEach(btn => {
+          const size = parseInt(btn.dataset.size);
+          if (size === parseInt(input.value)) {
+          btn.style.background = '#e9bd0c';
+          btn.style.color = '#000';
+          btn.style.fontWeight = 'bold';
+        } else {
+          btn.style.background = '#555';
+          btn.style.color = '#fff';
+          btn.style.fontWeight = 'normal';
+        }
+      });
+      };
+
+      input.addEventListener('change', (e) => {
+        const size = parseInt(e.target.value) || 1;
+        e.target.value = size;
+        onChange(size);
+        updateButtonStates();
+      });
+      document.querySelectorAll('.size-quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const size = parseInt(btn.dataset.size);
+          input.value = size;
+          onChange(size);
+          updateButtonStates();
+        });
+      });
+      updateButtonStates();
+    }
+
     function updateToolRibbon() {
       toolRibbonContent.innerHTML = '';
       
@@ -918,21 +969,23 @@ let gridWidth = 16;
 
       if (currentTool === 'pencil') {
         toolRibbonTitle.innerText = '연필 옵션';
-        toolRibbonContent.innerHTML = `
-          <label class="drag-label" for="pencilSizeInput">두께:</label>
-          <input type="number" id="pencilSizeInput" value="${toolOptions.pencilSize}" min="1" max="10">
-        `;
-        document.getElementById('pencilSizeInput').addEventListener('change', (e) => {
-          toolOptions.pencilSize = parseInt(e.target.value) || 1;
+        renderThicknessOptions({
+          inputId: 'pencilSizeInput',
+          label: '두께',
+          value: toolOptions.pencilSize,
+          onChange: (size) => {
+            toolOptions.pencilSize = size;
+          }
         });
       } else if (currentTool === 'line') {
         toolRibbonTitle.innerText = '직선 옵션';
-        toolRibbonContent.innerHTML = `
-          <label class="drag-label" for="lineSizeInput">두께:</label>
-          <input type="number" id="lineSizeInput" value="${toolOptions.lineSize}" min="1" max="10">
-        `;
-        document.getElementById('lineSizeInput').addEventListener('change', (e) => {
-          toolOptions.lineSize = parseInt(e.target.value) || 1;
+        renderThicknessOptions({
+          inputId: 'lineSizeInput',
+          label: '두께',
+          value: toolOptions.lineSize,
+          onChange: (size) => {
+            toolOptions.lineSize = size;
+          }
         });
       } else if (currentTool === 'bucket') {
         toolRibbonTitle.innerText = '채우기 옵션';
@@ -945,12 +998,13 @@ let gridWidth = 16;
         });
       } else if (currentTool === 'eraser') {
         toolRibbonTitle.innerText = '지우개 옵션';
-        toolRibbonContent.innerHTML = `
-          <label class="drag-label" for="eraserSizeInput">크기:</label>
-          <input type="number" id="eraserSizeInput" value="${toolOptions.eraserSize}" min="1" max="10">
-        `;
-        document.getElementById('eraserSizeInput').addEventListener('change', (e) => {
-          toolOptions.eraserSize = parseInt(e.target.value) || 1;
+        renderThicknessOptions({
+          inputId: 'eraserSizeInput',
+          label: '크기',
+          value: toolOptions.eraserSize,
+          onChange: (size) => {
+            toolOptions.eraserSize = size;
+          }
         });
       } else if (currentTool === 'shape') {
         toolRibbonTitle.innerText = '도형 옵션';
@@ -1085,12 +1139,28 @@ let gridWidth = 16;
         toggleFrameVisibility(frameId); 
       });
 
+      const btnDuplicate = document.createElement('div');
+      btnDuplicate.className = 'block-btn btn-duplicate';
+      btnDuplicate.innerText = '📋';
+      btnDuplicate.title = '프레임 복제';
+      btnDuplicate.style.cssText = 'bottom: -6px; left: -6px; background-color: #5b5b5b; color: white; font-size: 9px;';
+      btnDuplicate.addEventListener('pointerdown', (e) => { 
+        e.stopPropagation(); 
+        e.preventDefault();
+        const idx = frames.indexOf(frameObj);
+        if (idx !== -1) {
+          activeFrameIndex = idx;
+          duplicateFrame();
+        }
+      });
+
       const numberTag = document.createElement('div');
       numberTag.className = 'block-number';
 
       block.appendChild(imgPreview);
       block.appendChild(btnDel);
       block.appendChild(btnVis);
+      block.appendChild(btnDuplicate);
       block.appendChild(numberTag);
 
       frameObj.blockEl = block;
@@ -1168,6 +1238,109 @@ let gridWidth = 16;
       selectFrame(newIndex);
     }
 
+    function duplicateFrame() {
+      if (activeFrameIndex === -1) return;
+      
+      const sourceFrame = frames[activeFrameIndex];
+      addFrame();
+      const newFrame = frames[frames.length - 1];
+      
+      // 이전 레이어 제거
+      newFrame.layers.forEach(l => l.canvas.remove());
+      newFrame.layers = [];
+      
+      // 소스 프레임의 모든 레이어를 복사
+      sourceFrame.layers.forEach((sourceLayer) => {
+        createLayerForFrame(newFrame);
+        const newLayer = newFrame.layers[newFrame.layers.length - 1];
+        newLayer.name = sourceLayer.name + ' (복사)';
+        newLayer.visible = sourceLayer.visible;
+        newLayer.brightness = sourceLayer.brightness;
+        newLayer.contrast = sourceLayer.contrast;
+        newLayer.saturate = sourceLayer.saturate;
+        newLayer.opacity = sourceLayer.opacity;
+        
+        // 캔버스 내용 복사
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = sourceLayer.canvas.width;
+        tempCanvas.height = sourceLayer.canvas.height;
+        tempCanvas.getContext('2d').drawImage(sourceLayer.canvas, 0, 0);
+        
+        newLayer.ctx.drawImage(tempCanvas, 0, 0);
+        newLayer.canvas.style.filter = sourceLayer.canvas.style.filter;
+      });
+      
+      updateFramePreview(newFrame);
+      renderFrameUI();
+      selectFrame(frames.length - 1);
+      updatePaletteDisplay();
+      showToast('프레임 복제 완료');
+    }
+
+    function extractUsedColors() {
+      const usedColors = new Set();
+      
+      frames.forEach(frame => {
+        if (!frame.visible) return;
+        frame.layers.forEach(layer => {
+          if (!layer.visible) return;
+          const imageData = layer.ctx.getImageData(0, 0, layer.canvas.width, layer.canvas.height);
+          const data = imageData.data;
+          
+          for (let i = 3; i < data.length; i += 4) {
+            if (data[i] > 0) { // alpha > 0
+              const r = data[i - 3];
+              const g = data[i - 2];
+              const b = data[i - 1];
+              const hex = '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+              usedColors.add(hex);
+            }
+          }
+        });
+      });
+      
+      return usedColors;
+    }
+
+    function updatePaletteDisplay() {
+      const colors = extractUsedColors();
+      const paletteGrid = palettePanel.querySelector('#paletteGrid');
+      
+      if (!paletteGrid) return;
+      
+      paletteGrid.innerHTML = '';
+      
+      colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'palette-color-swatch';
+        swatch.style.backgroundColor = color;
+        swatch.title = color;
+        
+        swatch.addEventListener('click', () => {
+          colorPicker.value = color;
+          currentColor = color;
+          updateColorPickerUI();
+        });
+        
+        swatch.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          colorPicker.value = color;
+          currentColor = color;
+          updateColorPickerUI();
+        });
+        
+        paletteGrid.appendChild(swatch);
+      });
+    }
+
+    function updateColorPickerUI() {
+      const rgb = parseInt(currentColor.slice(1), 16);
+      const r = (rgb >> 16) & 255;
+      const g = (rgb >> 8) & 255;
+      const b = rgb & 255;
+      colorPicker.value = currentColor;
+    }
+
     function toggleFrameVisibility(frameId) {
       const frame = frames.find(f => f.id === frameId);
       if (!frame) return;
@@ -1204,6 +1377,7 @@ let gridWidth = 16;
 
       renderLayerUI();
       updateOnionSkin();
+      updatePaletteDisplay();
     }
 
     function createLayerForFrame(frameObj) {
@@ -1742,6 +1916,11 @@ let gridWidth = 16;
       saveHistory();
       isDrawing = true;
 
+      // 선택 영역이 있고 그리기 도구를 사용 중이면 선택 영역 해제
+      if (selectionRect && ['pencil', 'eraser', 'line', 'bucket', 'shape'].includes(currentTool)) {
+        clearSelection();
+      }
+
       prevDrawX = coords.x;
       prevDrawY = coords.y;
 
@@ -1865,6 +2044,7 @@ let gridWidth = 16;
 
           ctx.drawImage(tempC, selectionRect.x, selectionRect.y);
           updateActiveLayerPreview();
+          updatePaletteDisplay();
         }
 
         draggedData = null;
@@ -1901,6 +2081,7 @@ let gridWidth = 16;
         ctx.globalAlpha = 1.0;
         lineStartCoords = null;
         updateActiveLayerPreview();
+        updatePaletteDisplay();
       } else if (currentTool === 'shape' && shapeStartCoords) {
         previewCtx.clearRect(0, 0, gridWidth, gridHeight);
         ctx.globalAlpha = currentAlpha;
@@ -1912,6 +2093,9 @@ let gridWidth = 16;
         ctx.globalAlpha = 1.0;
         shapeStartCoords = null;
         updateActiveLayerPreview();
+        updatePaletteDisplay();
+      } else {
+        updatePaletteDisplay();
       }
     });
 
@@ -2186,7 +2370,7 @@ let gridWidth = 16;
         onionPrevCanvas.style.opacity = 0;
         onionNextCanvas.style.opacity = 0;
 
-        let curPlayIdx = activeFrameIndex >= 0 ? activeFrameIndex : 0;
+        currentPlayingFrameIndex = activeFrameIndex >= 0 ? activeFrameIndex : 0;
         const fps = parseInt(fpsInput.value) || 6;
 
         if (playInterval) clearInterval(playInterval);
@@ -2194,10 +2378,10 @@ let gridWidth = 16;
         playInterval = setInterval(() => {
           frames.forEach((f, idx) => {
             f.layers.forEach(l => {
-              l.canvas.style.display = (idx === curPlayIdx && f.visible && l.visible) ? 'block' : 'none';
+              l.canvas.style.display = (idx === currentPlayingFrameIndex && f.visible && l.visible) ? 'block' : 'none';
             });
           });
-          curPlayIdx = (curPlayIdx + 1) % frames.length;
+          currentPlayingFrameIndex = (currentPlayingFrameIndex + 1) % frames.length;
         }, 1000 / fps);
       } else {
         playBtn.innerText = '재생';
@@ -2208,9 +2392,10 @@ let gridWidth = 16;
           playInterval = null;
         }
 
-        if (activeFrameIndex >= 0) {
-          selectFrame(activeFrameIndex);
-        }
+        // 정지할 때 현재 재생 중인 프레임이 마지막으로 증가된 인덱스이므로, 
+        // 이전 인덱스를 선택하거나 현재 인덱스를 바로 표시
+        const displayFrameIndex = currentPlayingFrameIndex > 0 ? currentPlayingFrameIndex - 1 : frames.length - 1;
+        selectFrame(displayFrameIndex);
         updateOnionSkin();
       }
     });
@@ -2956,5 +3141,150 @@ let gridWidth = 16;
       targetEditingLayer = null;
       showToast('레이어 설정이 수정되었습니다.');
     });
+
+    // --- 팔레트 패널 드래그 기능 ---
+    if (palettePanel) {
+      let isDraggingPalette = false;
+      let paletteDragOffsetX = 0;
+      let paletteDragOffsetY = 0;
+      let palettePointerId = null;
+      let pendingPalettePosition = null;
+      let paletteAnimationFrame = null;
+
+      const paletteHandle = palettePanel.querySelector('#paletteHandle');
+      if (paletteHandle) {
+        paletteHandle.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return;
+
+          const paletteRect = palettePanel.getBoundingClientRect();
+          isDraggingPalette = true;
+          palettePointerId = e.pointerId;
+          paletteDragOffsetX = e.clientX - paletteRect.left;
+          paletteDragOffsetY = e.clientY - paletteRect.top;
+          palettePanel.style.left = `${paletteRect.left}px`;
+          palettePanel.style.top = `${paletteRect.top}px`;
+          palettePanel.style.right = 'auto';
+          palettePanel.classList.add('is-dragging');
+          paletteHandle.setPointerCapture(e.pointerId);
+          e.preventDefault();
+        });
+
+        const applyPalettePosition = () => {
+          paletteAnimationFrame = null;
+          if (!pendingPalettePosition) return;
+
+          const { left, top } = pendingPalettePosition;
+          palettePanel.style.left = `${left}px`;
+          palettePanel.style.top = `${top}px`;
+          pendingPalettePosition = null;
+        };
+
+        paletteHandle.addEventListener('pointermove', (e) => {
+          if (!isDraggingPalette || e.pointerId !== palettePointerId) return;
+
+          const maxLeft = Math.max(0, window.innerWidth - palettePanel.offsetWidth);
+          const maxTop = Math.max(0, window.innerHeight - palettePanel.offsetHeight);
+          pendingPalettePosition = {
+            left: Math.max(0, Math.min(e.clientX - paletteDragOffsetX, maxLeft)),
+            top: Math.max(0, Math.min(e.clientY - paletteDragOffsetY, maxTop))
+          };
+
+          if (!paletteAnimationFrame) {
+            paletteAnimationFrame = requestAnimationFrame(applyPalettePosition);
+          }
+        });
+
+        const stopPaletteDrag = (e) => {
+          if (!isDraggingPalette || e.pointerId !== palettePointerId) return;
+
+          isDraggingPalette = false;
+          palettePointerId = null;
+          palettePanel.classList.remove('is-dragging');
+          if (paletteAnimationFrame) {
+            cancelAnimationFrame(paletteAnimationFrame);
+            paletteAnimationFrame = null;
+          }
+          applyPalettePosition();
+          try { paletteHandle.releasePointerCapture(e.pointerId); } catch (err) {}
+        };
+
+        paletteHandle.addEventListener('pointerup', stopPaletteDrag);
+        paletteHandle.addEventListener('pointercancel', stopPaletteDrag);
+        paletteHandle.addEventListener('lostpointercapture', stopPaletteDrag);
+      }
+
+      updatePaletteDisplay();
+    }
+
+    // --- 팔레트 패널 자동 위치 조정 ---
+    (function setupPaletteAutoPosition() {
+      const palettePanel = document.getElementById('palettePanel');
+      const mainHeader = document.getElementById('mainHeader');
+      const sidebarRightEl = document.querySelector('.sidebar-right');
+      
+      if (!palettePanel || !mainHeader || !sidebarRightEl) return;
+
+      const GAP_TOP = 14;
+      const GAP_RIGHT = 14;
+      let previousLayout = null;
+
+      function repositionPalette() {
+        const headerRect = mainHeader.getBoundingClientRect();
+        const sidebarRect = sidebarRightEl.getBoundingClientRect();
+        
+        // 레이아웃 렌더링 전이라 좌표 값이 0이면 무시합니다냥!
+        if (sidebarRect.left === 0) return;
+
+        const topOffset = headerRect.bottom + GAP_TOP;
+        const rightOffset = Math.max(10, Math.round(window.innerWidth - sidebarRect.left + GAP_RIGHT));
+        const isManuallyPositioned = palettePanel.style.left && palettePanel.style.left !== 'auto';
+        
+        if (!isManuallyPositioned) {
+          palettePanel.style.left = '';
+          palettePanel.style.right = rightOffset + 'px';
+          palettePanel.style.top = topOffset + 'px';
+        } else if (previousLayout) {
+          // 수동 배치된 팔레트도 미니 내비게이션처럼 상단 리본과 우측 패널의 이동량을 따라갑니다.
+          const paletteRect = palettePanel.getBoundingClientRect();
+          const maxLeft = Math.max(0, window.innerWidth - palettePanel.offsetWidth);
+          const maxTop = Math.max(0, window.innerHeight - palettePanel.offsetHeight);
+          const left = Math.max(0, Math.min(paletteRect.left + sidebarRect.left - previousLayout.sidebarLeft, maxLeft));
+          const top = Math.max(0, Math.min(paletteRect.top + headerRect.bottom - previousLayout.headerBottom, maxTop));
+          palettePanel.style.left = left + 'px';
+          palettePanel.style.top = top + 'px';
+          palettePanel.style.right = 'auto';
+        }
+
+        previousLayout = { headerBottom: headerRect.bottom, sidebarLeft: sidebarRect.left };
+      }
+
+      let animFrameId = null;
+      function animateReposition(duration = 320) {
+        const startTime = performance.now();
+        function step(now) {
+          repositionPalette();
+          if (now - startTime < duration) {
+            animFrameId = requestAnimationFrame(step);
+          }
+        }
+        if (animFrameId) cancelAnimationFrame(animFrameId);
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      window.addEventListener('resize', repositionPalette);
+      window.addEventListener('load', repositionPalette);
+      
+      const togglePostBtn = document.getElementById('togglePostBtn');
+      const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+      const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
+
+      if (togglePostBtn) togglePostBtn.addEventListener('click', () => animateReposition());
+      if (toggleSettingsBtn) toggleSettingsBtn.addEventListener('click', () => animateReposition());
+      if (toggleHeaderBtn) toggleHeaderBtn.addEventListener('click', () => animateReposition());
+
+      // 초기 실행 타이밍을 넉넉하게 줍니다.
+      setTimeout(repositionPalette, 200);
+      setTimeout(repositionPalette, 600);
+    })();
 
     initEditor();

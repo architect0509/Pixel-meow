@@ -192,7 +192,7 @@
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
           개발: 아티Artie<br>
           Email: architect0507@naver.com<br><br>
-          Version: 2.0.2
+          Version: 2.1.0
         </div>
       </div>
 
@@ -269,6 +269,16 @@
     <div style="background: #2b2b2b; border: 1px solid #555; border-radius: 8px; padding: 24px; width: 420px; max-height: 70vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 12px;">
       <span style="font-size: 15px; font-weight: bold; color: #e9bd0c; text-align: center; margin-bottom: 4px;">업데이트 내역</span>
       <div style="font-size: 12px; line-height: 1.5; color: #ccc; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <strong style="color: #fff;">v2.1.0</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>캔버스의 팔레트 패널 추가 - 사용중인 색상 자동 즐겨찾기</li>
+            <li>선택도구로 영역 지정 이후 캔버스를 수정하면 자동으로 영역 지정이 취소되도록 개선</li>
+            <li>프레임 복제 기능 추가</li>
+            <li>연필&직선&지우개 옵션에서 두께를 빠르게 변경가능하도록 버튼 추가 - 1px~4px</li>
+            <li>상단 애니메이션 그룹의 재생버튼을 누른 후 정지하면 애니메이션 프레임이 계속 남아있는 문제 해결</li>
+          </ul>
+        </div>
         <div>
           <strong style="color: #fff;">v2.0.2</strong>
           <ul style="padding-left: 18px; margin-top: 2px;">
@@ -399,6 +409,38 @@
   </div>
 
   <div id="toastMsg" class="toast-msg"></div>
+
+  <!-- 팔레트 패널 -->
+  <div id="palettePanel" class="palette-panel" style="
+    position: fixed;
+    top: 140px;
+    right: 320px;
+    width: 180px;
+    background: #1a1a1a;
+    border: 2px solid #444;
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 900;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: top 0.3s ease, right 0.3s ease;
+  ">
+    <div id="paletteHandle" style="display: flex; justify-content: space-between; align-items: center; padding: 0 4px; cursor: move; user-select: none;">
+      <span style="font-size: 10px; font-weight: bold; color: #e9bd0c; text-transform: uppercase; letter-spacing: 0.5px;">팔레트</span>
+    </div>
+    <div id="paletteGrid" style="
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      min-height: 80px;
+      padding: 4px;
+      background: #222;
+      border-radius: 4px;
+      border: 1px solid #333;
+    "></div>
+  </div>
 
   <button id="pasteClipboardBtn" title="클립보드 이미지 붙여넣기" style="
     position: fixed;
