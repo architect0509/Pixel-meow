@@ -44,6 +44,8 @@ let gridWidth = 16;
 
     let prevFrameOpacity = 0.3;
     let nextFrameOpacity = 0.3;
+    let onionPrevColor = '#ff0000';
+    let onionNextColor = '#0000ff';
     let isPlaying = false;
     let playInterval = null;
 
@@ -116,7 +118,13 @@ let gridWidth = 16;
     const settingsPanel = document.getElementById('settingsPanel');
     const togglePostBtn = document.getElementById('togglePostBtn');
     const postPanel = document.getElementById('postPanel');
+    const togglePostProcessBtn = document.getElementById('togglePostProcessBtn');
+    const postProcessPanel = document.getElementById('postProcessPanel');
     const palettePanel = document.getElementById('palettePanel');
+
+    const aspectLockBtn = document.getElementById('aspectLockBtn');
+    const onionPrevColorInput = document.getElementById('onionPrevColorInput');
+    const onionNextColorInput = document.getElementById('onionNextColorInput');
 
     const changelogModalBtn = document.getElementById('changelogModalBtn');
     const changelogModal = document.getElementById('changelogModal');
@@ -348,22 +356,25 @@ let gridWidth = 16;
       toggleHeaderBtn.innerText = mainHeader.classList.contains('collapsed') ? '▼ ' : '▲ ';
     });
 
-    togglePostBtn.addEventListener('click', () => {
-      postPanel.classList.toggle('collapsed');
-      togglePostBtn.classList.toggle('active', !postPanel.classList.contains('collapsed'));
-      if (!settingsPanel.classList.contains('collapsed')) {
-        settingsPanel.classList.add('collapsed');
-        toggleSettingsBtn.classList.remove('active');
-      }
-    });
+    // 우측 설정 계열 패널(저장/설정/후처리)은 항상 하나만 열리도록 관리
+    const sidePanelToggles = [
+      { btn: toggleSettingsBtn, panel: settingsPanel },
+      { btn: togglePostBtn, panel: postPanel },
+      { btn: togglePostProcessBtn, panel: postProcessPanel }
+    ];
 
-    toggleSettingsBtn.addEventListener('click', () => {
-      settingsPanel.classList.toggle('collapsed');
-      toggleSettingsBtn.classList.toggle('active', !settingsPanel.classList.contains('collapsed'));
-      if (!postPanel.classList.contains('collapsed')) {
-        postPanel.classList.add('collapsed');
-        togglePostBtn.classList.remove('active');
-      }
+    sidePanelToggles.forEach(({ btn, panel }) => {
+      btn.addEventListener('click', () => {
+        const willOpen = panel.classList.contains('collapsed');
+        sidePanelToggles.forEach(({ btn: otherBtn, panel: otherPanel }) => {
+          otherPanel.classList.add('collapsed');
+          otherBtn.classList.remove('active');
+        });
+        if (willOpen) {
+          panel.classList.remove('collapsed');
+          btn.classList.add('active');
+        }
+      });
     });
 
     // --- 클립보드 붙여넣기 버튼을 우측 사이드바/설정 패널에 자동으로 밀착시키기 ---
@@ -398,6 +409,7 @@ let gridWidth = 16;
       window.addEventListener('resize', reposition);
       togglePostBtn.addEventListener('click', () => animateReposition());
       toggleSettingsBtn.addEventListener('click', () => animateReposition());
+      togglePostProcessBtn.addEventListener('click', () => animateReposition());
 
       reposition();
       // 폰트/레이아웃이 완전히 자리잡은 뒤 한 번 더 보정
@@ -581,6 +593,58 @@ let gridWidth = 16;
       }, 1200);
     }
 
+    // 삭제 등 되돌리기 어려운 작업 전에 사용하는 커스텀 확인창.
+    // 사용자가 '삭제'를 누르면 true, '취소'/배경클릭/Esc를 누르면 false로 resolve된다.
+    function showConfirmModal(message, confirmLabel = '삭제', cancelLabel = '취소') {
+      return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); display:flex; justify-content:center; align-items:center; z-index:10000;';
+
+        const box = document.createElement('div');
+        box.style.cssText = 'background:#2b2b2b; border:1px solid #555; border-radius:8px; padding:24px; width:300px; max-width:85vw; box-shadow:0 0 30px rgba(0,0,0,0.8); display:flex; flex-direction:column; gap:18px; align-items:center;';
+
+        const msg = document.createElement('div');
+        msg.style.cssText = 'color:#fff; font-size:13px; text-align:center; line-height:1.6; white-space:pre-line;';
+        msg.innerText = message;
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; gap:10px; width:100%;';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.innerText = cancelLabel;
+        cancelBtn.style.cssText = 'flex:1; background:#555; color:#fff; border:none; padding:8px 0; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.innerText = confirmLabel;
+        confirmBtn.style.cssText = 'flex:1; background:#d9534f; color:#fff; border:none; padding:8px 0; border-radius:6px; cursor:pointer; font-size:12px; font-weight:bold;';
+
+        function cleanup(result) {
+          overlay.remove();
+          document.removeEventListener('keydown', onKeydown);
+          resolve(result);
+        }
+
+        function onKeydown(e) {
+          if (e.key === 'Escape') { e.preventDefault(); cleanup(false); }
+          else if (e.key === 'Enter') { e.preventDefault(); cleanup(true); }
+        }
+
+        cancelBtn.addEventListener('click', () => cleanup(false));
+        confirmBtn.addEventListener('click', () => cleanup(true));
+        overlay.addEventListener('pointerdown', (e) => { if (e.target === overlay) cleanup(false); });
+        document.addEventListener('keydown', onKeydown);
+
+        btnRow.appendChild(cancelBtn);
+        btnRow.appendChild(confirmBtn);
+        box.appendChild(msg);
+        box.appendChild(btnRow);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        confirmBtn.focus();
+      });
+    }
+
     toggleBottomBtn.addEventListener('click', () => {
       bottomFramePanel.classList.toggle('collapsed');
       toggleBottomBtn.innerText = bottomFramePanel.classList.contains('collapsed') ? '▲' : '▼';
@@ -633,6 +697,14 @@ let gridWidth = 16;
       });
     }
 
+    function pushHistoryEntry(entry) {
+      historyStack = historyStack.slice(0, historyIndex + 1);
+      historyStack.push(entry);
+
+      if (historyStack.length > MAX_HISTORY) historyStack.shift();
+      else historyIndex++;
+    }
+
     function saveHistory() {
       if (activeFrameIndex === -1) return;
       const curFrame = frames[activeFrameIndex];
@@ -640,17 +712,14 @@ let gridWidth = 16;
       if (!activeLayer) return;
 
       const imgData = activeLayer.ctx.getImageData(0, 0, gridWidth, gridHeight);
-      historyStack = historyStack.slice(0, historyIndex + 1);
-      historyStack.push({
+      pushHistoryEntry({
+        type: 'pixel',
         width: gridWidth,
         height: gridHeight,
         frameIdx: activeFrameIndex,
         layerIdx: curFrame.activeLayerIndex,
         data: imgData
       });
-
-      if (historyStack.length > MAX_HISTORY) historyStack.shift();
-      else historyIndex++;
     }
 
     function applyState(state) {
@@ -695,8 +764,17 @@ let gridWidth = 16;
       }
       const state = historyStack[historyIndex];
       historyIndex--;
-      applyState(state);
-      showToast(`되돌리기 완료 (남은 되돌리기: ${historyIndex + 1}회)`);
+
+      if (state.type === 'frameDelete') {
+        restoreFrameDeletion(state);
+        showToast('프레임 삭제를 취소했습니다.');
+      } else if (state.type === 'layerDelete') {
+        restoreLayerDeletion(state);
+        showToast('레이어 삭제를 취소했습니다.');
+      } else {
+        applyState(state);
+        showToast(`되돌리기 완료 (남은 되돌리기: ${historyIndex + 1}회)`);
+      }
     }
 
     function redo() {
@@ -706,8 +784,17 @@ let gridWidth = 16;
       }
       historyIndex++;
       const state = historyStack[historyIndex];
-      applyState(state);
-      showToast(`다시 실행 완료 (남은 다시 실행: ${historyStack.length - 1 - historyIndex}회)`);
+
+      if (state.type === 'frameDelete') {
+        redoFrameDeletion(state);
+        showToast('프레임 삭제를 다시 실행했습니다.');
+      } else if (state.type === 'layerDelete') {
+        redoLayerDeletion(state);
+        showToast('레이어 삭제를 다시 실행했습니다.');
+      } else {
+        applyState(state);
+        showToast(`다시 실행 완료 (남은 다시 실행: ${historyStack.length - 1 - historyIndex}회)`);
+      }
     }
 
     function resizeCanvasSmart(newW, newH, autoFit = false) {
@@ -764,6 +851,44 @@ let gridWidth = 16;
     }
 
     applySizeBtn.addEventListener('click', () => resizeCanvasSmart());
+
+    // --- 가로세로 비율 고정 ---
+    let aspectRatioLocked = false;
+    let lockedAspectRatio = 1; // 세로 / 가로
+
+    function updateAspectLockBtnUI() {
+      aspectLockBtn.innerHTML = aspectRatioLocked ? '<img src="../Asset/Lock.png" style="width: 20px; height: 20px;" alt="lock">' : '<img src="../Asset/UnLock.png" style="width: 20px; height: 20px;" alt="UnLock">';
+      aspectLockBtn.classList.toggle('active', aspectRatioLocked);
+      aspectLockBtn.title = aspectRatioLocked ? '가로세로 비율 고정됨 (클릭하여 해제)' : '가로세로 비율 고정';
+    }
+
+    aspectLockBtn.addEventListener('click', () => {
+      aspectRatioLocked = !aspectRatioLocked;
+      if (aspectRatioLocked) {
+        const w = parseInt(widthInput.value) || 1;
+        const h = parseInt(heightInput.value) || 1;
+        lockedAspectRatio = h / w;
+      }
+      updateAspectLockBtnUI();
+    });
+
+    widthInput.addEventListener('input', () => {
+      if (!aspectRatioLocked) return;
+      const w = parseInt(widthInput.value);
+      if (!w || w <= 0) return;
+      const newH = Math.max(2, Math.min(256, Math.round(w * lockedAspectRatio)));
+      heightInput.value = newH;
+    });
+
+    heightInput.addEventListener('input', () => {
+      if (!aspectRatioLocked) return;
+      const h = parseInt(heightInput.value);
+      if (!h || h <= 0) return;
+      const newW = Math.max(2, Math.min(256, Math.round(h / lockedAspectRatio)));
+      widthInput.value = newW;
+    });
+
+    updateAspectLockBtnUI();
 
     flipHorizontalBtn.addEventListener('click', () => {
       if (activeFrameIndex === -1) return;
@@ -1103,8 +1228,15 @@ let gridWidth = 16;
       }
     }
 
-    function addFrame() {
-      const frameId = ++frameIdCounter;
+    // frameObj를 생성하고 관련 DOM(블록)/이벤트를 구성만 하고, frames 배열에 넣거나
+    // 레이어를 만드는 것은 호출부(addFrame / restoreFrameDeletion)에서 담당한다.
+    // explicitId가 주어지면(삭제 복구 시) 해당 id를 그대로 사용한다.
+    function createFrameObject(explicitId) {
+      const frameId = (explicitId !== undefined && explicitId !== null) ? explicitId : ++frameIdCounter;
+      if (explicitId !== undefined && explicitId !== null && explicitId > frameIdCounter) {
+        frameIdCounter = explicitId;
+      }
+
       const frameObj = {
         id: frameId,
         visible: true,
@@ -1166,8 +1298,6 @@ let gridWidth = 16;
       frameObj.blockEl = block;
       frameObj.imgPreviewEl = imgPreview;
 
-      frames.push(frameObj);
-
       block.addEventListener('dragstart', (e) => {
         draggedFrameIndex = frames.indexOf(frameObj);
         block.classList.add('dragging');
@@ -1209,6 +1339,13 @@ let gridWidth = 16;
         selectFrame(frames.indexOf(frameObj));
       });
 
+      return frameObj;
+    }
+
+    function addFrame() {
+      const frameObj = createFrameObject();
+      frames.push(frameObj);
+
       createLayerForFrame(frameObj);
       renderFrameUI();
       selectFrame(frames.length - 1);
@@ -1222,12 +1359,41 @@ let gridWidth = 16;
       updateFrameNumbers();
     }
 
-    function deleteFrame(frameId) {
-      if (frames.length <= 1) return;
+    // 프레임 삭제 복구를 위해 프레임과 모든 레이어의 상태를 스냅샷으로 저장
+    function snapshotFrame(frame) {
+      return {
+        id: frame.id,
+        visible: frame.visible,
+        activeLayerIndex: frame.activeLayerIndex,
+        layers: frame.layers.map(l => ({
+          id: l.id,
+          name: l.name,
+          visible: l.visible,
+          brightness: l.brightness,
+          contrast: l.contrast,
+          saturate: l.saturate,
+          opacity: l.opacity,
+          filter: l.canvas.style.filter,
+          imageData: l.ctx.getImageData(0, 0, l.canvas.width, l.canvas.height)
+        }))
+      };
+    }
+
+    async function deleteFrame(frameId) {
+      if (frames.length <= 1) {
+        showToast('프레임은 최소 1개 이상 있어야 합니다.');
+        return;
+      }
       const index = frames.findIndex(f => f.id === frameId);
       if (index === -1) return;
 
+      const confirmed = await showConfirmModal('이 프레임을 삭제하시겠습니까?\n(Ctrl+Z로 되돌릴 수 있습니다)');
+      if (!confirmed) return;
+
       const targetFrame = frames[index];
+      const snapshot = snapshotFrame(targetFrame);
+      pushHistoryEntry({ type: 'frameDelete', index, snapshot });
+
       targetFrame.layers.forEach(l => l.canvas.remove());
       targetFrame.blockEl.remove();
 
@@ -1236,6 +1402,40 @@ let gridWidth = 16;
 
       const newIndex = Math.min(index, frames.length - 1);
       selectFrame(newIndex);
+      showToast('프레임을 삭제했습니다.');
+    }
+
+    // undo(Ctrl+Z)로 삭제된 프레임을 원래 위치/내용대로 복원
+    function restoreFrameDeletion(action) {
+      const frameObj = createFrameObject(action.snapshot.id);
+      frameObj.visible = action.snapshot.visible;
+      frames.splice(action.index, 0, frameObj);
+
+      action.snapshot.layers.forEach(layerSnap => createLayerForFrame(frameObj, layerSnap));
+      frameObj.activeLayerIndex = action.snapshot.activeLayerIndex;
+      frameObj.blockEl.classList.toggle('hidden-block', !frameObj.visible);
+
+      renderFrameUI();
+      selectFrame(action.index);
+      selectLayer(frameObj.activeLayerIndex);
+      updateFramePreview(frameObj);
+    }
+
+    // redo(Ctrl+Y)로 복원했던 프레임 삭제를 다시 적용
+    function redoFrameDeletion(action) {
+      const idx = frames.findIndex(f => f.id === action.snapshot.id);
+      if (idx === -1) return;
+
+      const targetFrame = frames[idx];
+      targetFrame.layers.forEach(l => l.canvas.remove());
+      targetFrame.blockEl.remove();
+
+      frames.splice(idx, 1);
+      renderFrameUI();
+
+      if (frames.length > 0) {
+        selectFrame(Math.min(idx, frames.length - 1));
+      }
     }
 
     function duplicateFrame() {
@@ -1380,9 +1580,12 @@ let gridWidth = 16;
       updatePaletteDisplay();
     }
 
-    function createLayerForFrame(frameObj) {
-      const layerId = ++layerIdCounter;
-      const defaultName = `레이어 ${layerId}`;
+    // snapshot이 주어지면(삭제 복구 시) 해당 내용을 그대로 복원한 레이어를 생성한다.
+    // snapshot.insertIndex가 있으면 그 위치에 끼워넣고, 없으면 맨 뒤에 push한다(프레임 전체 복구 시 순서대로 재생성).
+    function createLayerForFrame(frameObj, snapshot) {
+      const layerId = snapshot ? snapshot.id : ++layerIdCounter;
+      if (snapshot && layerId > layerIdCounter) layerIdCounter = layerId;
+      const defaultName = snapshot ? snapshot.name : `레이어 ${layerId}`;
 
       const c = document.createElement('canvas');
       c.className = 'render-canvas';
@@ -1399,17 +1602,31 @@ let gridWidth = 16;
       const layerObj = { 
         id: layerId, 
         name: defaultName,
-        visible: true, 
+        visible: snapshot ? snapshot.visible : true, 
         canvas: c, 
         ctx: ctx, 
         blockEl: null, 
         imgPreviewEl: null 
       };
 
-      frameObj.layers.push(layerObj);
-      frameObj.activeLayerIndex = frameObj.layers.length - 1;
+      if (snapshot) {
+        layerObj.brightness = snapshot.brightness;
+        layerObj.contrast = snapshot.contrast;
+        layerObj.saturate = snapshot.saturate;
+        layerObj.opacity = snapshot.opacity;
+        if (snapshot.filter) c.style.filter = snapshot.filter;
+        if (snapshot.imageData) ctx.putImageData(snapshot.imageData, 0, 0);
+      }
+
+      if (snapshot && typeof snapshot.insertIndex === 'number') {
+        frameObj.layers.splice(snapshot.insertIndex, 0, layerObj);
+      } else {
+        frameObj.layers.push(layerObj);
+        frameObj.activeLayerIndex = frameObj.layers.length - 1;
+      }
 
       updateFramePreview(frameObj);
+      return layerObj;
     }
 
     function addLayer() {
@@ -1420,21 +1637,90 @@ let gridWidth = 16;
       selectLayer(curFrame.layers.length - 1);
     }
 
-    function deleteLayer(layerId) {
+    // 레이어 삭제 복구를 위해 레이어 상태를 스냅샷으로 저장 (index는 원래 위치)
+    function snapshotLayer(layerObj, index) {
+      return {
+        id: layerObj.id,
+        name: layerObj.name,
+        visible: layerObj.visible,
+        brightness: layerObj.brightness,
+        contrast: layerObj.contrast,
+        saturate: layerObj.saturate,
+        opacity: layerObj.opacity,
+        filter: layerObj.canvas.style.filter,
+        imageData: layerObj.ctx.getImageData(0, 0, layerObj.canvas.width, layerObj.canvas.height),
+        insertIndex: index
+      };
+    }
+
+    async function deleteLayer(layerId) {
       if (activeFrameIndex === -1) return;
       const curFrame = frames[activeFrameIndex];
-      if (curFrame.layers.length <= 1) return;
+      if (curFrame.layers.length <= 1) {
+        showToast('레이어는 최소 1개 이상 있어야 합니다.');
+        return;
+      }
 
       const index = curFrame.layers.findIndex(l => l.id === layerId);
       if (index === -1) return;
 
-      curFrame.layers[index].canvas.remove();
-      curFrame.layers.splice(index, 1);
+      const confirmed = await showConfirmModal('이 레이어를 삭제하시겠습니까?\n(Ctrl+Z로 되돌릴 수 있습니다)');
+      if (!confirmed) return;
 
-      const newIndex = Math.min(index, curFrame.layers.length - 1);
+      // 확인 창이 열려있는 동안 레이어 순서가 바뀌었을 수 있으므로 인덱스를 다시 계산
+      const curIndex = curFrame.layers.findIndex(l => l.id === layerId);
+      if (curIndex === -1) return;
+      if (curFrame.layers.length <= 1) {
+        showToast('레이어는 최소 1개 이상 있어야 합니다.');
+        return;
+      }
+
+      const snapshot = snapshotLayer(curFrame.layers[curIndex], curIndex);
+      pushHistoryEntry({
+        type: 'layerDelete',
+        frameIndex: activeFrameIndex,
+        snapshot,
+        prevActiveLayerIndex: curFrame.activeLayerIndex
+      });
+
+      curFrame.layers[curIndex].canvas.remove();
+      curFrame.layers.splice(curIndex, 1);
+
+      const newIndex = Math.min(curIndex, curFrame.layers.length - 1);
       renderLayerUI();
       selectLayer(newIndex);
       updateFramePreview(curFrame);
+      showToast('레이어를 삭제했습니다.');
+    }
+
+    // undo(Ctrl+Z)로 삭제된 레이어를 원래 위치/내용대로 복원
+    function restoreLayerDeletion(action) {
+      const frameObj = frames[action.frameIndex];
+      if (!frameObj) return;
+
+      createLayerForFrame(frameObj, action.snapshot);
+      frameObj.activeLayerIndex = action.prevActiveLayerIndex;
+
+      selectFrame(action.frameIndex);
+      selectLayer(frameObj.activeLayerIndex);
+      updateFramePreview(frameObj);
+    }
+
+    // redo(Ctrl+Y)로 복원했던 레이어 삭제를 다시 적용
+    function redoLayerDeletion(action) {
+      const frameObj = frames[action.frameIndex];
+      if (!frameObj) return;
+
+      const idx = frameObj.layers.findIndex(l => l.id === action.snapshot.id);
+      if (idx === -1 || frameObj.layers.length <= 1) return;
+
+      frameObj.layers[idx].canvas.remove();
+      frameObj.layers.splice(idx, 1);
+
+      const newIndex = Math.min(idx, frameObj.layers.length - 1);
+      renderLayerUI();
+      selectLayer(newIndex);
+      updateFramePreview(frameObj);
     }
 
     function toggleLayerVisibility(layerId) {
@@ -1642,6 +1928,11 @@ let gridWidth = 16;
         const prevFrame = frames[activeFrameIndex - 1];
         if (prevFrame.visible) {
           prevFrame.layers.forEach(l => { if (l.visible) onionPrevCtx.drawImage(l.canvas, 0, 0); });
+          // 그려진 내용의 실루엣(투명도)은 유지한 채 지정된 색으로 덧칠
+          onionPrevCtx.globalCompositeOperation = 'source-in';
+          onionPrevCtx.fillStyle = onionPrevColor;
+          onionPrevCtx.fillRect(0, 0, gridWidth, gridHeight);
+          onionPrevCtx.globalCompositeOperation = 'source-over';
         }
       }
 
@@ -1649,6 +1940,10 @@ let gridWidth = 16;
         const nextFrame = frames[activeFrameIndex + 1];
         if (nextFrame.visible) {
           nextFrame.layers.forEach(l => { if (l.visible) onionNextCtx.drawImage(l.canvas, 0, 0); });
+          onionNextCtx.globalCompositeOperation = 'source-in';
+          onionNextCtx.fillStyle = onionNextColor;
+          onionNextCtx.fillRect(0, 0, gridWidth, gridHeight);
+          onionNextCtx.globalCompositeOperation = 'source-over';
         }
       }
     }
@@ -3060,6 +3355,16 @@ let gridWidth = 16;
       updateOnionSkin();
     });
 
+    onionPrevColorInput.addEventListener('input', (e) => {
+      onionPrevColor = e.target.value;
+      updateOnionSkin();
+    });
+
+    onionNextColorInput.addEventListener('input', (e) => {
+      onionNextColor = e.target.value;
+      updateOnionSkin();
+    });
+
     function updateCanvasFilters() {
       const b = brightnessInput.value;
       const c = contrastInput.value;
@@ -3276,10 +3581,12 @@ let gridWidth = 16;
       
       const togglePostBtn = document.getElementById('togglePostBtn');
       const toggleSettingsBtn = document.getElementById('toggleSettingsBtn');
+      const togglePostProcessBtn = document.getElementById('togglePostProcessBtn');
       const toggleHeaderBtn = document.getElementById('toggleHeaderBtn');
 
       if (togglePostBtn) togglePostBtn.addEventListener('click', () => animateReposition());
       if (toggleSettingsBtn) toggleSettingsBtn.addEventListener('click', () => animateReposition());
+      if (togglePostProcessBtn) togglePostProcessBtn.addEventListener('click', () => animateReposition());
       if (toggleHeaderBtn) toggleHeaderBtn.addEventListener('click', () => animateReposition());
 
       // 초기 실행 타이밍을 넉넉하게 줍니다.
