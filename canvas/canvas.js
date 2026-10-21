@@ -169,13 +169,16 @@ let gridWidth = 16;
     const openNewWindowBtn = document.getElementById('openNewWindowBtn');
     const reloadPageBtn = document.getElementById('reloadPageBtn');
 
-    // --- 파이어베이스 기반 이어서 작업하기 복원 로직 ---
+    // --- 로컬 갤러리(IndexedDB) 기반 이어서 작업하기 복원 로직 ---
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const fromSession = !urlParams.get('id');
       const targetId = urlParams.get('id') || sessionStorage.getItem('edit_target_art_id') || sessionStorage.getItem('current_art_id');
 
-      if (!targetId) return; 
+      if (!targetId) {
+        markSaved(); // 새 캔버스: 이 시점의 빈 상태를 "저장된 상태" 기준으로 기록
+        return;
+      }
       editingArtId = targetId;
 
       // edit_target_art_id/data는 detail.html -> canvas.html 이동 시 딱 한 번만 쓰기 위한 값.
@@ -191,18 +194,13 @@ let gridWidth = 16;
         window.history.replaceState({}, '', newUrl);
       }
 
-      const checkFirebase = setInterval(async () => {
-        if (window.pixelFirebase && window.pixelFirebase.db) {
-          clearInterval(checkFirebase);
+      (async () => {
+        {
           try {
             showToast("기존 작품 불러오는 중...");
-            const { db, doc, getDoc } = window.pixelFirebase;
-            
-            const docRef = doc(db, "arts", editingArtId);
-            const docSnap = await getDoc(docRef);
+            const artData = await window.pixelGallery.get(editingArtId);
 
-            if (docSnap.exists()) {
-              const artData = docSnap.data();
+            if (artData) {
               
               if (artData.title && document.getElementById('fileNameInput')) {
                 document.getElementById('fileNameInput').value = artData.title;
@@ -255,6 +253,7 @@ let gridWidth = 16;
                           if (typeof selectFrame === 'function') selectFrame(0);
                           if (typeof renderCanvas === 'function') renderCanvas();
                           if (typeof updateFrameList === 'function') updateFrameList();
+                          markSaved();
                           showToast('기존 작품 불러오기 완료!');
                         }
                       }
@@ -282,20 +281,27 @@ let gridWidth = 16;
                   targetLayer.ctx.drawImage(img, 0, 0);
                   if (typeof updateActiveLayerPreview === 'function') updateActiveLayerPreview();
                   if (typeof renderCanvas === 'function') renderCanvas();
+                  markSaved();
                   showToast('기존 작품 불러오기 완료!');
                 };
+                img.onerror = markSaved;
                 img.src = artData.preview;
               } else {
+                markSaved();
                 showToast('기존 작품 불러오기 완료!');
               }
             } else {
-              console.warn("해당 ID의 작품을 파이어베이스에서 찾을 수 없습니다.");
+              console.warn("해당 ID의 작품을 내 갤러리에서 찾을 수 없습니다.");
+              showToast('저장된 작품을 찾을 수 없어요. (삭제되었거나 다른 브라우저일 수 있어요)');
+              editingArtId = null; // 없는 작품을 덮어쓰기 하지 않도록 새 작품 상태로 전환
+              markSaved();
             }
           } catch (err) {
             console.error("작품 불러오기 실패:", err);
+            markSaved();
           }
         }
-      }, 200);
+      })();
     });
 
     goGalleryBtn.addEventListener('click', () => {
@@ -567,11 +573,63 @@ let gridWidth = 16;
       }
     });
 
+    // --- 저장 여부 추적 + 로고 클릭 시 갤러리(index)로 이동 ---
+    // 현재 작업 상태를 문자열 서명으로 만들어 두고, 마지막 저장/불러오기 시점의 서명과 비교해
+    // "저장하지 않은 변경사항"이 있는지 판단한다. (undo로 원상복구하면 변경 없음으로 처리됨)
+    let savedSignature = null;
+    let leaveAfterSave = false;
+    const HOME_URL = '../index.html';
+
+    function computeStateSignature() {
+      const parts = [gridWidth, gridHeight, frames.length];
+      frames.forEach(f => {
+        parts.push(f.visible !== false ? 1 : 0, f.layers.length);
+        f.layers.forEach(l => {
+          parts.push(l.name || '', l.visible !== false ? 1 : 0, l.canvas.toDataURL());
+        });
+      });
+      return parts.join('|');
+    }
+
+    function markSaved() {
+      try { savedSignature = computeStateSignature(); } catch (e) { savedSignature = null; }
+    }
+
+    function hasUnsavedChanges() {
+      if (savedSignature === null) return false; // 기준 시점이 아직 없으면(불러오는 중 등) 묻지 않음
+      try { return computeStateSignature() !== savedSignature; } catch (e) { return false; }
+    }
+
+    function goHome() {
+      window.location.href = HOME_URL;
+    }
+
+    const leaveModal = document.getElementById('leaveModal');
+    const leaveCancelBtn = document.getElementById('leaveCancelBtn');
+    const leaveDiscardBtn = document.getElementById('leaveDiscardBtn');
+    const leaveSaveBtn = document.getElementById('leaveSaveBtn');
+
     logoIcon.addEventListener('click', () => {
-      if (confirm("작업 중인 내용이 초기화될 수 있습니다. 새로고침하시겠습니까?")) {
-        editingArtId = null;
-        window.location.reload();
+      if (!hasUnsavedChanges()) {
+        goHome();
+        return;
       }
+      leaveModal.style.display = 'flex';
+    });
+
+    leaveCancelBtn.addEventListener('click', () => {
+      leaveModal.style.display = 'none';
+    });
+
+    leaveDiscardBtn.addEventListener('click', () => {
+      leaveModal.style.display = 'none';
+      goHome();
+    });
+
+    leaveSaveBtn.addEventListener('click', () => {
+      leaveModal.style.display = 'none';
+      leaveAfterSave = true;   // 저장이 성공하면 executeSave 끝에서 이동
+      shareArtBtn.click();     // 기존 "내 갤러리에 작품 저장" 모달 열기
     });
 
     resetPostBtn.addEventListener('click', () => {
@@ -2706,7 +2764,7 @@ let gridWidth = 16;
     let saveModalAnimInterval = null;
 
     // 참고: 상세 페이지(detail.html)에서 "이어서 작업"으로 넘어왔을 때의 실제 복원은
-    // 위쪽의 파이어베이스 기반 복원 로직(DOMContentLoaded, editingArtId 설정 부분)에서
+    // 위쪽의 로컬 갤러리 기반 복원 로직(DOMContentLoaded, editingArtId 설정 부분)에서
     // 프레임/레이어까지 전부 처리하므로 여기서 별도 처리하지 않음.
 
     // 사이드바의 '작품 저장하기' 버튼 클릭 시 모달 오픈
@@ -2748,6 +2806,7 @@ let gridWidth = 16;
       cancelBtn.onclick = () => {
         artSaveModal.style.display = 'none';
         if (saveModalAnimInterval) clearInterval(saveModalAnimInterval);
+        leaveAfterSave = false; // 저장을 취소하면 이동도 취소
       };
       saveModalBtnContainer.appendChild(cancelBtn);
 
@@ -2768,7 +2827,7 @@ let gridWidth = 16;
       saveModalBtnContainer.appendChild(newSaveBtn);
     });
 
-    // 실제 파이어베이스 저장 수행 함수
+    // 실제 저장 수행 함수 (이 컴퓨터의 브라우저 저장소 = IndexedDB 에 저장)
     async function executeSave(isOverwrite) {
       const title = saveModalTitleInput.value.trim();
       const author = saveModalDescInput.value.trim() || "내 작품";
@@ -2787,8 +2846,8 @@ let gridWidth = 16;
         frames[0].layers.forEach(l => { if (l.visible) tempCtx.drawImage(l.canvas, 0, 0); });
         const previewDataUrl = tempC.toDataURL();
 
-        // 로컬 .pix 파일 저장(saveProjectBtn)과 동일한 방식으로 프레임/레이어를 직렬화.
-        // 이걸 같이 저장해야 '이어서 작업하기'에서 애니메이션/레이어 구조가 그대로 복원됨.
+        // 프레임/레이어를 그대로 저장해야 '이어서 작업하기'에서 애니메이션/레이어 구조가 복원됨.
+        // (로컬 저장소라서 예전 클라우드 방식의 1MiB 용량 제한이 없음)
         const framesPayload = frames.map(f => ({
           visible: f.visible,
           layers: f.layers.map(l => ({
@@ -2798,51 +2857,41 @@ let gridWidth = 16;
           }))
         }));
 
-        // Firestore 문서 하나당 최대 약 1MiB. 프레임/레이어가 많으면 초과할 수 있으므로
-        // 미리 크기를 재서, 넘으면 frames 없이(미리보기만) 저장하고 사용자에게 알려줌.
-        const framesJsonSize = new Blob([JSON.stringify(framesPayload)]).size;
-        const FIRESTORE_DOC_LIMIT = 1048487; // 약 1MiB (여유분 확보)
-        const canSaveFrames = framesJsonSize < FIRESTORE_DOC_LIMIT * 0.9; // preview 등 다른 필드 여유도 감안
-
         const payload = {
           title: title,
           author: author,
           preview: previewDataUrl,
           width: gridWidth,
-          height: gridHeight
+          height: gridHeight,
+          fps: parseInt(fpsInput.value) || 6,
+          frames: framesPayload
         };
-        if (canSaveFrames) {
-          payload.frames = framesPayload;
-        } else {
-          console.warn(`프레임 데이터가 너무 커서(${framesJsonSize} bytes) Firestore에 저장하지 않았습니다. 미리보기 이미지만 저장됩니다.`);
-        }
 
         if (isOverwrite && editingArtId) {
-          // 기존 문서 덮어쓰기 (Update)
-          const docRef = window.pixelFirebase.doc(window.pixelFirebase.db, "arts", editingArtId);
-          await window.pixelFirebase.updateDoc(docRef, payload);
-          showToast(canSaveFrames ? "성공적으로 덮어씌워졌습니다!" : "덮어썼지만 용량이 커서 미리보기만 저장됐어요.");
+          // 기존 작품 덮어쓰기
+          await window.pixelGallery.update(editingArtId, payload);
+          showToast("성공적으로 덮어씌워졌습니다!");
         } else {
-          // 새로 저장하기 (Add)
-          const docRef = await window.pixelFirebase.addDoc(
-            window.pixelFirebase.collection(window.pixelFirebase.db, "arts"),
-            { ...payload, createdAt: new Date() }
-          );
-
-          let myArts = JSON.parse(localStorage.getItem('my_pixel_arts') || '[]');
-          myArts.unshift(docRef.id);
-          localStorage.setItem('my_pixel_arts', JSON.stringify(myArts));
-
-          editingArtId = docRef.id; // 이후부터는 이어서 작업 상태로 전환
-          showToast(canSaveFrames ? "내 갤러리에 새로 저장되었습니다!" : "저장했지만 용량이 커서 미리보기만 저장됐어요.");
+          // 새 작품으로 저장
+          editingArtId = await window.pixelGallery.add(payload); // 이후부터는 이어서 작업 상태로 전환
+          showToast("내 갤러리에 새로 저장되었습니다!");
         }
 
         artSaveModal.style.display = 'none';
         if (saveModalAnimInterval) clearInterval(saveModalAnimInterval);
 
+        markSaved(); // 저장 완료 시점을 새 기준으로 기록
+        if (leaveAfterSave) {
+          leaveAfterSave = false;
+          goHome();
+        }
+
       } catch (err) {
         console.error(err);
-        alert("저장 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
+        const quota = err && (err.name === 'QuotaExceededError' || /quota/i.test(String(err.message)));
+        alert(quota
+          ? "저장 공간이 부족해서 저장하지 못했어요. 내 갤러리에서 안 쓰는 작품을 삭제한 뒤 다시 시도해주세요."
+          : "저장 중 오류가 발생했습니다. 콘솔을 확인해주세요.");
       }
     }
 

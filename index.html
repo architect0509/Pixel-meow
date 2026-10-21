@@ -1,302 +1,784 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <link rel="icon" href="./Asset/IconFit.png" type="image/png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pixel-meow - 내 작품 갤러리</title>
   <link rel="icon" href="./Asset/IconFit.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
+    :root {
+      --bg: #1b1b1f;
+      --bg-deep: #141417;
+      --surface: #25252b;
+      --surface-2: #2e2e36;
+      --line: #3b3b45;
+      --text: #e8e8ee;
+      --muted: #9a9aa8;
+      --accent: #e9bd0c;
+      --accent-dim: rgba(233, 189, 12, 0.14);
+      --accent-ink: #1a1500;
+      --px: 4px;
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-dot: 'DotGothic16', 'Noto Sans KR', sans-serif;
+      --font-body: 'Noto Sans KR', 'Segoe UI', sans-serif;
     }
 
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
     body {
-      background-color: #282828;
-      color: #cccccc;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    top-nav {
-      background-color: #383838;
-      padding: 14px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #1e1e1e;
+    img { image-rendering: pixelated; }
+    button { font-family: inherit; }
+
+    /* ---------- NAV ---------- */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(20, 20, 23, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 2px solid #000;
+      box-shadow: 0 2px 0 var(--line);
     }
 
-    .nav-title {
-      font-size: 16px;
-      font-weight: bold;
-      color: #e9bd0c;
-    }
-
-    container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 40px 20px;
-      gap: 30px;
+    .nav-inner {
       max-width: 1200px;
-      width: 100%;
       margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
     }
 
-    .logo-section {
-      text-align: center;
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .brand img { width: 32px; height: 32px; }
+
+    .brand-name {
+      font-family: var(--font-pixel);
+      font-size: 13px;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 0 #000;
+    }
+
+    .nav-links { display: flex; align-items: center; gap: 8px; }
+
+    /* ---------- BUTTONS (pixel style) ---------- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-family: var(--font-dot);
+      font-size: 14px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      border: 2px solid #000;
+      background: var(--surface-2);
+      color: var(--text);
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35), inset 3px 3px 0 rgba(255,255,255,0.08), 3px 3px 0 #000;
+      transition: transform .08s ease, box-shadow .08s ease, background .15s ease;
+    }
+
+    .btn:hover { background: #3a3a44; }
+
+    .btn:active {
+      transform: translate(3px, 3px);
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,0.35), inset 3px 3px 0 rgba(255,255,255,0.08), 0 0 0 #000;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      box-shadow: inset -3px -3px 0 rgba(0,0,0,0.25), inset 3px 3px 0 rgba(255,255,255,0.35), 3px 3px 0 #000;
+    }
+
+    .btn-primary:hover { background: #f5cc2e; }
+
+    .btn-lg { padding: 14px 26px; font-size: 16px; }
+
+    /* ---------- HERO ---------- */
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border-bottom: 2px solid #000;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(233,189,12,0.10), transparent 60%),
+        var(--bg-deep);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 24px 24px;
+      mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 40%, transparent 100%);
+      pointer-events: none;
+    }
+
+    .floaters { position: absolute; inset: 0; pointer-events: none; }
+
+    .floater {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(40px); opacity: 0; }
+      15%  { opacity: .55; }
+      85%  { opacity: .55; }
+      100% { transform: translateY(-260px); opacity: 0; }
+    }
+
+    .hero-inner {
+      position: relative;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 72px 24px 64px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      text-align: center;
+      gap: 22px;
     }
 
-    .logo-img {
-      width: 100px;
-      height: 100px;
-      image-rendering: pixelated;
+    .hero-logo-wrap {
+      width: 112px;
+      height: 112px;
+      display: grid;
+      place-items: center;
+      background: var(--surface);
+      border: 2px solid #000;
+      box-shadow: inset -4px -4px 0 rgba(0,0,0,0.35), inset 4px 4px 0 rgba(255,255,255,0.07), 6px 6px 0 #000;
+      animation: bob 2.4s steps(4, end) infinite;
     }
 
-    .logo-title {
-      font-size: 28px;
-      font-weight: bold;
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    .hero-logo { width: 80px; height: 80px; }
+
+    .hero-eyebrow {
+      font-family: var(--font-pixel);
+      font-size: 10px;
+      color: var(--accent);
+      letter-spacing: 2px;
+      padding: 7px 12px;
+      background: var(--accent-dim);
+      border: 1px solid rgba(233,189,12,0.35);
+    }
+
+    .hero-title {
+      font-family: var(--font-dot);
+      font-size: clamp(34px, 6vw, 56px);
+      line-height: 1.15;
       color: #fff;
+      text-shadow: 4px 4px 0 #000;
       letter-spacing: 1px;
     }
 
-    .logo-desc {
-      font-size: 13px;
-      color: #888;
+    .hero-title em {
+      font-style: normal;
+      color: var(--accent);
     }
 
-    .divider {
+    .hero-desc {
+      max-width: 520px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--muted);
+    }
+
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+
+    .stats {
+      display: flex;
+      gap: 0;
+      margin-top: 18px;
+      background: var(--surface);
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0 #000;
+    }
+
+    .stat {
+      padding: 14px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 130px;
+    }
+
+    .stat + .stat { border-left: 2px solid #000; }
+
+    .stat-value {
+      font-family: var(--font-pixel);
+      font-size: 18px;
+      color: var(--accent);
+    }
+
+    .stat-label { font-size: 12px; color: var(--muted); }
+
+    /* ---------- MAIN ---------- */
+    main {
+      flex: 1;
       width: 100%;
-      height: 1px;
-      background-color: #444;
-      margin: 10px 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 48px 24px 72px;
     }
 
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-dot);
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 12px;
+      height: 24px;
+      background: var(--accent);
+      box-shadow: 4px 0 0 #000;
+    }
+
+    .section-sub { margin-top: 6px; font-size: 13px; color: var(--muted); }
+
+    .tools { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .search, .select {
+      height: 40px;
+      background: var(--bg-deep);
+      border: 2px solid #000;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 0 12px;
+      outline: none;
+      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.5), 0 2px 0 var(--line);
+      transition: box-shadow .15s ease;
+    }
+
+    .search { width: 220px; }
+    .select { cursor: pointer; }
+
+    .search:focus, .select:focus {
+      box-shadow: inset 2px 2px 0 rgba(0,0,0,0.5), 0 2px 0 var(--accent);
+    }
+
+    .search::placeholder { color: #6d6d7a; }
+
+    /* ---------- GRID / CARDS ---------- */
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 20px;
-      width: 100%;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 24px;
     }
 
-    /* 에디터 이동용 플러스 블록 (에디터 내 레이어/프레임 추가 버튼 스타일 차용) */
-    .btn-add-art-card {
+    .card, .card-new {
       position: relative;
-      width: 100%;
-      height: 247px; /* 프리뷰+인포 높이와 동일하게 맞춤 */
-      background-color: #333333;
-      border: 2px dashed #555;
-      border-radius: 8px;
-      color: #aaa;
-      font-size: 40px;
-      font-weight: bold;
-      cursor: pointer;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 10px;
-      background-image: 
-        linear-gradient(to right, #333 50%, #2a2a2a 50%), 
-        linear-gradient(to bottom, #333 50%, #2a2a2a 50%);
-      background-blend-mode: difference;
-      background-size: 12px 12px;
-      transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+      background: var(--surface);
+      border: 2px solid #000;
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.05), 5px 5px 0 #000;
       text-decoration: none;
-    }
-
-    .btn-add-art-card:hover {
-      background-color: #3a3a3a;
-      color: #fff;
-      border-color: #e9bd0c;
-      transform: translateY(-4px);
-    }
-
-    .btn-add-art-text {
-      font-size: 13px;
-      color: #aaa;
-      font-weight: bold;
-    }
-
-    .art-card {
-      background-color: #333333;
-      border: 1px solid #444;
-      border-radius: 8px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      color: inherit;
       cursor: pointer;
-      transition: transform 0.2s ease, border-color 0.2s ease;
+      transition: transform .12s ease, box-shadow .12s ease;
+      animation: popIn .35s steps(5, end) backwards;
     }
 
-    .art-card:hover {
-      transform: translateY(-4px);
-      border-color: #e9bd0c;
+    @keyframes popIn {
+      from { opacity: 0; transform: translateY(12px) scale(.97); }
+      to   { opacity: 1; transform: none; }
     }
 
-    .art-preview-wrapper {
-      width: 100%;
-      height: 200px;
-      background-color: #1e1e1e;
-      background-image: 
-        linear-gradient(45deg, #2d2d2d 25%, transparent 25%), 
-        linear-gradient(-45deg, #2d2d2d 25%, transparent 25%), 
-        linear-gradient(45deg, transparent 75%, #2d2d2d 75%), 
-        linear-gradient(-45deg, transparent 75%, #2d2d2d 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+    .card:hover, .card-new:hover {
+      transform: translate(-3px, -3px);
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.05), 8px 8px 0 var(--accent);
+    }
+
+    .card:active, .card-new:active {
+      transform: translate(2px, 2px);
+      box-shadow: inset 2px 2px 0 rgba(255,255,255,0.05), 2px 2px 0 #000;
+    }
+
+    .thumb {
+      position: relative;
+      height: 190px;
       display: flex;
-      justify-content: center;
       align-items: center;
-      padding: 15px;
+      justify-content: center;
+      padding: 18px;
+      border-bottom: 2px solid #000;
+      background-color: #17171b;
+      background-image:
+        linear-gradient(45deg, #202026 25%, transparent 25%),
+        linear-gradient(-45deg, #202026 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #202026 75%),
+        linear-gradient(-45deg, transparent 75%, #202026 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
     }
 
-    .art-preview-img {
-      max-width: 100%;
-      max-height: 100%;
+    .thumb img {
+      width: 100%;
+      height: 100%;
       object-fit: contain;
-      image-rendering: pixelated;
+      transition: transform .2s steps(4, end);
     }
 
-    .art-info {
-      padding: 12px 14px;
+    .card:hover .thumb img { transform: scale(1.08); }
+
+    .badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      font-family: var(--font-pixel);
+      font-size: 8px;
+      padding: 5px 6px;
+      color: var(--accent-ink);
+      background: var(--accent);
+      border: 2px solid #000;
+    }
+
+    .meta {
+      padding: 14px 16px 16px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
     }
 
-    .art-title {
-      font-size: 14px;
-      font-weight: bold;
+    .meta-title {
+      font-family: var(--font-dot);
+      font-size: 17px;
       color: #fff;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
-    .art-author {
-      font-size: 11px;
-      color: #aaa;
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    .no-arts {
+    .meta-author { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .size-chip {
+      flex-shrink: 0;
+      font-family: var(--font-pixel);
+      font-size: 8px;
+      padding: 4px 6px;
+      color: var(--muted);
+      background: var(--bg-deep);
+      border: 1px solid var(--line);
+    }
+
+    /* new card */
+    .card-new {
+      min-height: 100%;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      border-style: dashed;
+      border-color: #55555f;
+      background:
+        repeating-linear-gradient(45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 20px),
+        var(--surface);
+      box-shadow: none;
+      min-height: 292px;
+    }
+
+    .card-new:hover { border-color: var(--accent); box-shadow: 6px 6px 0 var(--accent-dim); }
+
+    .plus {
+      width: 64px;
+      height: 64px;
+      position: relative;
+      background: var(--accent);
+      border: 2px solid #000;
+      box-shadow: inset -4px -4px 0 rgba(0,0,0,0.25), inset 4px 4px 0 rgba(255,255,255,0.35), 4px 4px 0 #000;
+    }
+
+    .plus::before, .plus::after {
+      content: '';
+      position: absolute;
+      background: var(--accent-ink);
+    }
+    .plus::before { left: 14px; right: 14px; top: 28px; height: 8px; }
+    .plus::after  { top: 14px; bottom: 14px; left: 28px; width: 8px; }
+
+    .card-new-text { font-family: var(--font-dot); font-size: 16px; color: #fff; }
+    .card-new-sub { font-size: 12px; color: var(--muted); }
+
+    /* skeleton */
+    .skeleton {
+      height: 292px;
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      border: 2px solid #000;
+      box-shadow: 5px 5px 0 #000;
+      animation: shimmer 1.2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      from { background-position: 200% 0; }
+      to   { background-position: -200% 0; }
+    }
+
+    /* empty */
+    .empty {
       grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 48px 20px;
       text-align: center;
-      padding: 60px 0;
-      color: #777;
+      color: var(--muted);
       font-size: 14px;
+      border: 2px dashed var(--line);
+      background: rgba(255,255,255,0.015);
+    }
+
+    .empty strong { font-family: var(--font-dot); font-size: 18px; color: #fff; font-weight: 400; }
+
+    /* ---------- FOOTER ---------- */
+    footer {
+      border-top: 2px solid #000;
+      box-shadow: 0 -2px 0 var(--line);
+      background: var(--bg-deep);
+    }
+
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 22px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .footer-inner b { font-family: var(--font-pixel); font-weight: 400; font-size: 10px; color: var(--accent); }
+
+    @media (max-width: 640px) {
+      .nav-inner { padding: 10px 16px; }
+      .brand-name { font-size: 11px; }
+      .hero-inner { padding: 48px 16px 44px; }
+      main { padding: 36px 16px 56px; }
+      .stat { padding: 12px 18px; min-width: 100px; }
+      .search { width: 100%; }
+      .tools { width: 100%; }
+      .select { flex: 1; }
+      .btn-hide-sm { display: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
   </style>
 
+  <script src="./gallery-store.js"></script>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    let allArts = []; // [{ id, ...data }] 최신순(저장 순서 유지)
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyD_pvFCpVjc0enadMXuHbMcv4TC9NSLdHc",
-      authDomain: "pixel-meow-project.firebaseapp.com",
-      projectId: "pixel-meow-project",
-      storageBucket: "pixel-meow-project.firebasestorage.app",
-      messagingSenderId: "894944756752",
-      appId: "1:894944756752:web:77a8055b615590a39ff695",
-      measurementId: "G-W9K4ZVSHVY"
-    };
+    const $ = (id) => document.getElementById(id);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // 새 작품을 시작할 때는 이전 "이어서 작업하기" 흔적을 지운다.
+    function resetEditSession() {
+      sessionStorage.removeItem('edit_target_art_id');
+      sessionStorage.removeItem('edit_target_art_data');
+      sessionStorage.removeItem('current_art_id');
+    }
 
-    async function loadMyGallery() {
-      const gridEl = document.getElementById('galleryGrid');
-
-      // 1. 가장 먼저 '에디터로 이동하는 + 블록'을 그리드 맨 앞에 생성
-      gridEl.innerHTML = `
-        <a href="./canvas/canvas.html" id="newArtCardBtn" class="btn-add-art-card" title="새 작품 그리러 가기">
-          <span>+</span>
-          <span class="btn-add-art-text">새 작품 만들기</span>
-        </a>
+    function makeNewCard() {
+      const a = document.createElement('a');
+      a.href = './canvas/canvas.html';
+      a.className = 'card-new';
+      a.title = '새 작품 그리러 가기';
+      a.innerHTML = `
+        <div class="plus"></div>
+        <span class="card-new-text">새 작품 만들기</span>
+        <span class="card-new-sub">빈 캔버스에서 시작해요</span>
       `;
+      a.addEventListener('click', resetEditSession);
+      return a;
+    }
 
-      // 이전에 "이어서 작업하기"로 넘어갔던 흔적(sessionStorage)이 남아있으면
-      // 새 캔버스를 열어도 예전 작품이 불러와지는 문제가 있어, 진짜 새 작품을 시작할 때는
-      // 관련 세션 값을 확실히 비워준다.
-      document.getElementById('newArtCardBtn').addEventListener('click', () => {
-        sessionStorage.removeItem('edit_target_art_id');
-        sessionStorage.removeItem('edit_target_art_data');
-        sessionStorage.removeItem('current_art_id');
+    function makeArtCard(art, index) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.style.animationDelay = `${Math.min(index, 12) * 40}ms`;
+      card.addEventListener('click', () => {
+        window.location.href = `./detail.html?id=${encodeURIComponent(art.id)}`;
       });
 
-      const myArtIds = JSON.parse(localStorage.getItem('my_pixel_arts') || '[]');
+      const thumb = document.createElement('div');
+      thumb.className = 'thumb';
 
-      if (myArtIds.length === 0) {
-        return; // 작품이 없어도 + 블록은 유지됨
+      const img = document.createElement('img');
+      img.alt = art.title || '픽셀 아트';
+      img.loading = 'lazy';
+      img.src = art.preview || '';
+      thumb.appendChild(img);
+
+      if (Array.isArray(art.frames) && art.frames.length > 1) {
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = `${art.frames.length}F`;
+        badge.title = `${art.frames.length}프레임 애니메이션`;
+        thumb.appendChild(badge);
       }
 
-      try {
-        const querySnapshot = await getDocs(collection(db, "arts"));
-        const allArtsMap = {};
-        querySnapshot.forEach((doc) => {
-          allArtsMap[doc.id] = doc.data();
-        });
+      const meta = document.createElement('div');
+      meta.className = 'meta';
 
-        myArtIds.forEach((id) => {
-          const art = allArtsMap[id];
-          if (art) {
-            const card = document.createElement('div');
-            card.className = 'art-card';
-            
-            card.addEventListener('click', () => {
-              window.location.href = `./detail.html?id=${id}`;
-            });
+      const title = document.createElement('span');
+      title.className = 'meta-title';
+      title.textContent = art.title || '제목 없음';
 
-            card.innerHTML = `
-              <div class="art-preview-wrapper">
-                <img src="${art.preview}" class="art-preview-img" alt="Pixel Art">
-              </div>
-              <div class="art-info">
-                <span class="art-title">${art.title || '제목 없음'}</span>
-                <span class="art-author">by. ${art.author || '나'}</span>
-              </div>
-            `;
-            gridEl.appendChild(card);
-          }
-        });
-      } catch (err) {
-        console.error(err);
+      const row = document.createElement('div');
+      row.className = 'meta-row';
+
+      const author = document.createElement('span');
+      author.className = 'meta-author';
+      author.textContent = `by. ${art.author || '나'}`;
+      row.appendChild(author);
+
+      if (art.width && art.height) {
+        const chip = document.createElement('span');
+        chip.className = 'size-chip';
+        chip.textContent = `${art.width}x${art.height}`;
+        row.appendChild(chip);
+      }
+
+      meta.appendChild(title);
+      meta.appendChild(row);
+      card.appendChild(thumb);
+      card.appendChild(meta);
+      return card;
+    }
+
+    function updateStats() {
+      $('statCount').textContent = allArts.length;
+      const anim = allArts.filter(a => Array.isArray(a.frames) && a.frames.length > 1).length;
+      $('statAnim').textContent = anim;
+    }
+
+    function render() {
+      const grid = $('galleryGrid');
+      const q = $('searchInput').value.trim().toLowerCase();
+      const sort = $('sortSelect').value;
+
+      let list = allArts.filter(a => {
+        if (!q) return true;
+        return (a.title || '').toLowerCase().includes(q) || (a.author || '').toLowerCase().includes(q);
+      });
+
+      if (sort === 'name') {
+        list = [...list].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ko'));
+      } else if (sort === 'old') {
+        list = [...list].reverse();
+      }
+
+      grid.innerHTML = '';
+      grid.appendChild(makeNewCard());
+
+      if (allArts.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.innerHTML = `<strong>아직 저장된 작품이 없어요</strong><span>첫 번째 픽셀 아트를 그리고 갤러리에 저장해 보세요.</span>`;
+        grid.appendChild(empty);
+        return;
+      }
+
+      if (list.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.innerHTML = `<strong>검색 결과가 없어요</strong><span>다른 키워드로 찾아보세요.</span>`;
+        grid.appendChild(empty);
+        return;
+      }
+
+      list.forEach((art, i) => grid.appendChild(makeArtCard(art, i)));
+    }
+
+    function showSkeleton(n) {
+      const grid = $('galleryGrid');
+      grid.innerHTML = '';
+      grid.appendChild(makeNewCard());
+      for (let i = 0; i < n; i++) {
+        const s = document.createElement('div');
+        s.className = 'skeleton';
+        grid.appendChild(s);
       }
     }
 
-    window.addEventListener('DOMContentLoaded', loadMyGallery);
+    async function loadMyGallery() {
+      try {
+        // 이 컴퓨터(브라우저)에 저장된 내 작품 전체를 읽어옴
+        allArts = await window.pixelGallery.list();
+      } catch (err) {
+        console.error(err);
+        allArts = [];
+      }
+
+      updateStats();
+      render();
+    }
+
+    function spawnFloaters() {
+      const wrap = $('floaters');
+      if (!wrap) return;
+      const colors = ['#e9bd0c', '#6ec1ff', '#ff7a90', '#8be28b', '#c79bff'];
+      for (let i = 0; i < 16; i++) {
+        const el = document.createElement('div');
+        el.className = 'floater';
+        el.style.left = `${Math.random() * 100}%`;
+        el.style.top = `${40 + Math.random() * 55}%`;
+        el.style.background = colors[i % colors.length];
+        const s = [8, 12, 16][Math.floor(Math.random() * 3)];
+        el.style.width = el.style.height = `${s}px`;
+        el.style.animationDuration = `${6 + Math.random() * 6}s`;
+        el.style.animationDelay = `${Math.random() * 6}s`;
+        wrap.appendChild(el);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      spawnFloaters();
+      $('navNewBtn').addEventListener('click', resetEditSession);
+      $('heroNewBtn').addEventListener('click', resetEditSession);
+      $('searchInput').addEventListener('input', render);
+      $('sortSelect').addEventListener('change', render);
+      loadMyGallery();
+    });
   </script>
 </head>
 <body>
 
-  <top-nav>
-    <div class="nav-title">Pixel-meow</div>
-  </top-nav>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="./index.html" class="brand">
+        <img src="./Asset/IconFit.png" alt="">
+        <span class="brand-name">PIXEL-MEOW</span>
+      </a>
+      <div class="nav-links">
+        <a href="#gallery" class="btn btn-hide-sm">내 갤러리</a>
+        <a href="./canvas/canvas.html" id="navNewBtn" class="btn btn-primary">+ 새 작품</a>
+      </div>
+    </div>
+  </nav>
 
-  <container>
-    <div class="logo-section">
-      <img src="./Asset/Icon.png" class="logo-img" alt="Logo">
-      <h1 class="logo-title">내 작품 갤러리</h1>
-      <p class="logo-desc">이 브라우저에서 내가 공유하고 등록한 픽셀 아트 모음입니다.</p>
+  <header class="hero">
+    <div class="floaters" id="floaters"></div>
+    <div class="hero-inner">
+      <div class="hero-logo-wrap">
+        <img src="./Asset/Icon.png" class="hero-logo" alt="Pixel-meow Logo">
+      </div>
+      <span class="hero-eyebrow">PIXEL ART STUDIO</span>
+      <h1 class="hero-title">작은 점 하나로,<br><em>나만의 세계</em>를 그려요</h1>
+      <p class="hero-desc">
+        프레임 애니메이션과 레이어까지 지원하는 웹 픽셀아트 에디터.<br>
+        이 브라우저에서 저장한 작품이 여기에 모여요.
+      </p>
+      <div class="hero-actions">
+        <a href="./canvas/canvas.html" id="heroNewBtn" class="btn btn-primary btn-lg">지금 그리기 시작</a>
+        <a href="#gallery" class="btn btn-lg">내 작품 보기</a>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value" id="statCount">0</span>
+          <span class="stat-label">저장한 작품</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value" id="statAnim">0</span>
+          <span class="stat-label">애니메이션</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="gallery">
+    <div class="section-head">
+      <div>
+        <h2 class="section-title">내 작품 갤러리</h2>
+        <p class="section-sub">카드를 눌러 작품을 관리하거나 이어서 작업할 수 있어요.</p>
+      </div>
+      <div class="tools">
+        <input type="search" id="searchInput" class="search" placeholder="제목 또는 작성자 검색" autocomplete="off">
+        <select id="sortSelect" class="select" aria-label="정렬">
+          <option value="new">최신순</option>
+          <option value="old">오래된순</option>
+          <option value="name">이름순</option>
+        </select>
+      </div>
     </div>
 
-    <div class="divider"></div>
+    <div class="gallery-grid" id="galleryGrid"></div>
+  </main>
 
-    <div class="gallery-grid" id="galleryGrid">
+  <footer>
+    <div class="footer-inner">
+      <span><b>PIXEL-MEOW</b>&nbsp; 픽셀냐옹 · 개발 Thaniya Project</span>
+      <span>Made with ♥ and a lot of tiny squares</span>
     </div>
-  </container>
+  </footer>
 
 </body>
 </html>

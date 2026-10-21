@@ -6,12 +6,15 @@
   <title>Pixel-meow</title>
   <link rel="icon" href="../Asset/IconFit.png" type="image/png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./canvas.css">
 </head>
 <body>
 
   <header id="mainHeader">
-    <img src="../Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; margin-top: 6px; cursor: pointer;" alt="Logo" title="클릭하여 새로고침">
+    <img src="../Asset/Icon.png" id="logoIcon" style="width: 80px; height: 80px; margin-right: 6px; margin-top: 6px; cursor: pointer;" alt="Logo" title="클릭하여 갤러리(홈)로 이동">
     <div class="header-group" id="ribbonCanvasSettings">
       <span class="header-group-title">캔버스 설정</span>
       <div class="header-row">
@@ -190,9 +193,9 @@
         </div>
         <div style="color: #727272; text-align: center; margin-top: 20px; margin-bottom: 10px; font-size: 12px;">
           <span style="font-weight: bold; color: #e9bd0c;">픽셀냐옹</span><br>
-          개발: 아티Artie<br>
+          개발: Thaniya Project<br>
           Email: architect0507@naver.com<br><br>
-          Version: 2.2.0
+          Version: 3.0.0
         </div>
       </div>
 
@@ -292,6 +295,20 @@
     <div style="background: #2b2b2b; border: 1px solid #555; border-radius: 8px; padding: 24px; width: 420px; max-height: 70vh; overflow-y: auto; box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 12px;">
       <span style="font-size: 15px; font-weight: bold; color: #e9bd0c; text-align: center; margin-bottom: 4px;">업데이트 내역</span>
       <div style="font-size: 12px; line-height: 1.5; color: #ccc; display: flex; flex-direction: column; gap: 10px;">
+        <div>
+          <strong style="color: #fff;">v3.0.0</strong>
+          <ul style="padding-left: 18px; margin-top: 2px;">
+            <li>갤러리 페이지 픽셀 아트 스타일로 전면 개편 - 작품 검색 및 정렬(최신순/오래된순/이름순) 기능 추가</li>
+            <li>갤러리 카드에 캔버스 크기와 프레임 수 표시 추가</li>
+            <li>갤러리 작품 불러오기 속도 개선</li>
+            <li>작품 상세 페이지 UI 개선 - 작품 삭제 시 확인창 추가</li>
+            <li>작품 복제 시 프레임과 레이어까지 함께 복제되도록 개선</li>
+            <li>캔버스 왼쪽 위 로고 클릭 시 갤러리로 이동하도록 변경</li>
+            <li>저장하지 않은 변경사항이 있으면 이동 전에 저장 여부를 묻는 창이 뜨도록 개선</li>
+            <li>캔버스 UI 전반 디자인 통일 및 일부 개선</li>
+            <li>개발자 표기를 Thaniya Project로 변경</li>
+          </ul>
+        </div>
         <div>
           <strong style="color: #fff;">v2.2.0</strong>
           <ul style="padding-left: 18px; margin-top: 2px;">
@@ -442,6 +459,19 @@
     </div>
   </div>
 
+  <!-- 로고 클릭 시: 저장하지 않은 변경사항 확인 모달 -->
+  <div id="leaveModal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); display: none; z-index: 10000; justify-content: center; align-items: center;">
+    <div style="background: #2b2b2b; border: 1px solid #555; border-radius: 8px; padding: 24px; width: 360px; box-shadow: 0 0 30px rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 14px;">
+      <span style="font-size: 15px; font-weight: bold; color: #e9bd0c; text-align: center;">저장하시겠습니까?</span>
+      <p style="font-size: 12px; line-height: 1.6; color: #ccc; text-align: center;">저장하지 않은 변경사항이 있어요.<br>저장하지 않고 나가면 작업 내용이 사라집니다.</p>
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button id="leaveCancelBtn" style="flex:1; background:#555; color:#fff; border:none; padding:9px 4px; border-radius:4px; cursor:pointer; font-size:12px;">취소</button>
+        <button id="leaveDiscardBtn" style="flex:1; background:#d9534f; color:#fff; border:none; padding:9px 4px; border-radius:4px; cursor:pointer; font-size:12px;">저장 안 함</button>
+        <button id="leaveSaveBtn" style="flex:1.2; background:#e9bd0c; color:#111; border:none; padding:9px 4px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">저장하기</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toastMsg" class="toast-msg"></div>
 
   <!-- 팔레트 패널 -->
@@ -467,8 +497,12 @@
     <div id="paletteGrid" style="
       display: grid;
       grid-template-columns: repeat(4, 1fr);
+      grid-auto-rows: 32px;
       gap: 4px;
       min-height: 80px;
+      max-height: 188px;
+      overflow-y: auto;
+      overflow-x: hidden;
       padding: 4px;
       background: #222;
       border-radius: 4px;
@@ -526,25 +560,8 @@
     </div>
   </div>
 
-  <!-- 파이어베이스 SDK 및 에디터 로직 스크립트 연결 -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyD_pvFCpVjc0enadMXuHbMcv4TC9NSLdHc",
-      authDomain: "pixel-meow-project.firebaseapp.com",
-      projectId: "pixel-meow-project",
-      storageBucket: "pixel-meow-project.firebasestorage.app",
-      messagingSenderId: "894944756752",
-      appId: "1:894944756752:web:77a8055b615590a39ff695",
-      measurementId: "G-W9K4ZVSHVY"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    window.pixelFirebase = { db, collection, addDoc, doc, updateDoc, getDoc };
-  </script>
+  <!-- 로컬 갤러리 저장소 (이 컴퓨터의 브라우저에 저장) -->
+  <script src="../gallery-store.js"></script>
   <script src="./canvas.js"></script>
 
 
