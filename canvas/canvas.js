@@ -3644,3 +3644,68 @@ let gridWidth = 16;
     })();
 
     initEditor();
+
+    /* =====================================================================
+       던전 맵 메이커 연동
+       - 맵 메이커에서 열면(창 안에 포함되거나 ?maker=1 로 새 탭) "맵 메이커로 보내기" 버튼이 나타납니다.
+       - 현재 작품을 스프라이트 시트(PNG, 1배율)로 합성해 postMessage로 전달합니다.
+       - 메시지: { type:'pixel-meow:export', name, png(dataURL), frameW, frameH, cols, rows, frames, fps, as:'tile'|'sprite' }
+       ===================================================================== */
+    (function () {
+      let target = null;
+      try {
+        if (window.parent && window.parent !== window) target = window.parent;
+        else if (window.opener && new URLSearchParams(location.search).get('maker') === '1') target = window.opener;
+      } catch (e) {}
+      if (!target) return;
+
+      document.querySelectorAll('.maker-only').forEach(el => { el.style.display = ''; });
+
+      function sendToMaker() {
+        if (frames.length === 0) { showToast('보낼 프레임이 없어요'); return; }
+        const inputCols = parseInt(columnsInput.value) || 4;
+        const cols = Math.min(frames.length, Math.max(1, inputCols));
+        const rows = Math.ceil(frames.length / cols);
+        const sheet = document.createElement('canvas');
+        sheet.width = gridWidth * cols;
+        sheet.height = gridHeight * rows;
+        const sctx = sheet.getContext('2d');
+        frames.forEach((f, idx) => {
+          const t = document.createElement('canvas');
+          t.width = gridWidth; t.height = gridHeight;
+          const tctx = t.getContext('2d');
+          f.layers.forEach(l => { if (l.visible) tctx.drawImage(l.canvas, 0, 0); });
+          sctx.drawImage(t, (idx % cols) * gridWidth, Math.floor(idx / cols) * gridHeight);
+        });
+        const kindSel = document.getElementById('sendMakerKind');
+        const fpsEl = document.getElementById('fpsInput');
+        try {
+          target.postMessage({
+            type: 'pixel-meow:export',
+            version: 1,
+            name: (fileNameInput.value || 'my-pixel-art').slice(0, 30),
+            png: sheet.toDataURL('image/png'),
+            frameW: gridWidth,
+            frameH: gridHeight,
+            cols, rows,
+            frames: frames.length,
+            fps: parseInt(fpsEl && fpsEl.value) || 6,
+            as: kindSel ? kindSel.value : 'tile'
+          }, '*');
+          showToast('맵 메이커로 보냈어요');
+        } catch (err) {
+          console.error(err);
+          showToast('맵 메이커로 보내지 못했어요');
+        }
+      }
+
+      ['sendMakerBtn', 'sendMakerBtn2'].forEach(id => {
+        const b = document.getElementById(id);
+        if (b) b.addEventListener('click', sendToMaker);
+      });
+
+      window.addEventListener('message', (e) => {
+        if (e.source !== target || !e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'maker:received') showToast('맵 메이커에 가져왔어요 (' + (e.data.name || '') + ')');
+      });
+    })();

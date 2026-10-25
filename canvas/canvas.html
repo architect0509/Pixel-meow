@@ -90,6 +90,10 @@
         <button class="btn-apply" id="openNewWindowBtn" title="새 창으로 빈 캔버스 띄우기">빈 캔버스</button>
         <button class="btn-apply" id="reloadPageBtn" title="페이지 새로고침">새로고침</button>
       </div>
+      <div class="header-row maker-only" style="display:none; gap: 6px;">
+        <select id="sendMakerKind" title="맵 메이커에서 쓸 방식"><option value="tile">타일셋</option><option value="sprite">스프라이트</option></select>
+        <button class="btn-apply" id="sendMakerBtn" title="지금 그림을 던전 맵 메이커로 바로 보냅니다">🎮 맵 메이커로 보내기</button>
+      </div>
     </div>
   </header>
 
@@ -256,6 +260,7 @@
         <button class="btn-save-main" id="saveBtn">통합 PNG 저장</button>
         <button class="btn-save-sub" id="saveSeparateBtn">개별 프레임 저장</button>
         <button class="btn-save-gif" id="saveGifBtn">GIF 애니메이션 저장</button>
+        <button class="btn-share maker-only" id="sendMakerBtn2" style="display:none;">🎮 맵 메이커로 보내기</button>
       </div>
     </div>
 
