@@ -169,6 +169,27 @@ let gridWidth = 16;
     const openNewWindowBtn = document.getElementById('openNewWindowBtn');
     const reloadPageBtn = document.getElementById('reloadPageBtn');
 
+    window.addEventListener('message', (event) => {
+      const data = event.data;
+      if (!data || typeof data !== 'object') return;
+        // gameMaker로부터 내보내기 요청이 온 경우
+        if (data.type === 'maker:request-export') {
+            // 1. 캔버스 데이터를 이미지(Base64 PNG)로 변환
+            const canvas = document.getElementById('your-canvas-id'); // 실제 캔버스 엘리먼트 선택자
+            const dataUrl = canvas.toDataURL('image/png');
+
+            // 2. 부모 창(gameMaker.html)으로 결과 데이터 전송
+            window.parent.postMessage({
+                type: 'pixel-meow:export',
+                png: dataUrl,
+                name: data.name || 'pixel_art',
+                as: data.as || 'png',
+                frameW: canvas.width,
+                frameH: canvas.height
+            }, '*');
+        }
+    });
+
     // --- 로컬 갤러리(IndexedDB) 기반 이어서 작업하기 복원 로직 ---
     window.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
@@ -3659,9 +3680,11 @@ let gridWidth = 16;
       } catch (e) {}
       if (!target) return;
 
-      document.querySelectorAll('.maker-only').forEach(el => { el.style.display = ''; });
+      // 맵 메이커 안에서는 로고와 페이지 관리를 숨기고, 내보내기는 맵 메이커 쪽 버튼으로 요청받는다
+      ['logoIcon', 'ribbonPageManage'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
 
-      function sendToMaker() {
+      function sendToMaker(opts) {
+        opts = opts || {};
         if (frames.length === 0) { showToast('보낼 프레임이 없어요'); return; }
         const inputCols = parseInt(columnsInput.value) || 4;
         const cols = Math.min(frames.length, Math.max(1, inputCols));
@@ -3683,14 +3706,14 @@ let gridWidth = 16;
           target.postMessage({
             type: 'pixel-meow:export',
             version: 1,
-            name: (fileNameInput.value || 'my-pixel-art').slice(0, 30),
+            name: String(opts.name || fileNameInput.value || 'my-pixel-art').slice(0, 30),
             png: sheet.toDataURL('image/png'),
             frameW: gridWidth,
             frameH: gridHeight,
             cols, rows,
             frames: frames.length,
             fps: parseInt(fpsEl && fpsEl.value) || 6,
-            as: kindSel ? kindSel.value : 'tile'
+            as: opts.as || (kindSel ? kindSel.value : 'tile')
           }, '*');
           showToast('맵 메이커로 보냈어요');
         } catch (err) {
@@ -3699,13 +3722,10 @@ let gridWidth = 16;
         }
       }
 
-      ['sendMakerBtn', 'sendMakerBtn2'].forEach(id => {
-        const b = document.getElementById(id);
-        if (b) b.addEventListener('click', sendToMaker);
-      });
 
       window.addEventListener('message', (e) => {
         if (e.source !== target || !e.data || typeof e.data !== 'object') return;
+        if (e.data.type === 'maker:request-export') { sendToMaker({ name: e.data.name, as: e.data.as === 'sprite' ? 'sprite' : 'tile' }); return; }
         if (e.data.type === 'maker:received') showToast('맵 메이커에 가져왔어요 (' + (e.data.name || '') + ')');
       });
     })();
