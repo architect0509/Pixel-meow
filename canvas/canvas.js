@@ -169,26 +169,7 @@ let gridWidth = 16;
     const openNewWindowBtn = document.getElementById('openNewWindowBtn');
     const reloadPageBtn = document.getElementById('reloadPageBtn');
 
-    window.addEventListener('message', (event) => {
-      const data = event.data;
-      if (!data || typeof data !== 'object') return;
-        // gameMaker로부터 내보내기 요청이 온 경우
-        if (data.type === 'maker:request-export') {
-            // 1. 캔버스 데이터를 이미지(Base64 PNG)로 변환
-            const canvas = document.getElementById('your-canvas-id'); // 실제 캔버스 엘리먼트 선택자
-            const dataUrl = canvas.toDataURL('image/png');
-
-            // 2. 부모 창(gameMaker.html)으로 결과 데이터 전송
-            window.parent.postMessage({
-                type: 'pixel-meow:export',
-                png: dataUrl,
-                name: data.name || 'pixel_art',
-                as: data.as || 'png',
-                frameW: canvas.width,
-                frameH: canvas.height
-            }, '*');
-        }
-    });
+    // (맵 메이커 연동 메시지는 파일 맨 아래 "던전 맵 메이커 연동" 블록에서 처리합니다)
 
     // --- 로컬 갤러리(IndexedDB) 기반 이어서 작업하기 복원 로직 ---
     window.addEventListener('DOMContentLoaded', async () => {
@@ -3723,9 +3704,77 @@ let gridWidth = 16;
       }
 
 
+      // 맵 메이커에서 "수정하기"로 연 경우: 갤러리 이어서 작업하기 복원이 덮어쓰지 않도록 세션 값을 비운다
+      // (이 블록은 DOMContentLoaded 복원 로직보다 먼저 실행됨)
+      try {
+        const qs = new URLSearchParams(location.search);
+        if (qs.has('edit') || qs.has('new')) {
+          ['edit_target_art_id', 'edit_target_art_data', 'current_art_id'].forEach(k => sessionStorage.removeItem(k));
+        }
+      } catch (e) {}
+
+      // 맵 메이커가 보낸 PNG(스프라이트 시트)를 프레임으로 나눠 불러온다
+      // 메시지: { type:'maker:load-image', token, name, png(dataURL), frameW, frameH, frames }
+      function loadFromMaker(d) {
+        if (typeof d.png !== 'string' || !/^data:image\/png;base64,/.test(d.png)) {
+          target.postMessage({ type: 'pixel-meow:load-error', token: d.token, reason: 'bad-png' }, '*');
+          return;
+        }
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const fw = Math.max(1, Math.min(512, parseInt(d.frameW) || img.width));
+            const fh = Math.max(1, Math.min(512, parseInt(d.frameH) || img.height));
+            const cols = Math.max(1, Math.floor(img.width / fw));
+            const rows = Math.max(1, Math.floor(img.height / fh));
+            const n = Math.max(1, Math.min(parseInt(d.frames) || cols * rows, cols * rows, 256));
+
+            resizeCanvasSmart(fw, fh, true);
+            frames.forEach(f => f.layers.forEach(l => l.canvas.remove()));
+            frames = [];
+            frameListEl.innerHTML = '';
+            layerListEl.innerHTML = '';
+            frameIdCounter = 0;
+            layerIdCounter = 0;
+
+            for (let k = 0; k < n; k++) {
+              addFrame();
+              const f = frames[frames.length - 1];
+              const ctx = f.layers[0].ctx;
+              ctx.imageSmoothingEnabled = false;
+              ctx.clearRect(0, 0, fw, fh);
+              ctx.drawImage(img, (k % cols) * fw, Math.floor(k / cols) * fh, fw, fh, 0, 0, fw, fh);
+              updateFramePreview(f);
+            }
+            selectFrame(0);
+
+            if (columnsInput) columnsInput.value = cols;
+            if (fileNameInput && d.name) fileNameInput.value = String(d.name).slice(0, 30);
+            historyStack = [];
+            historyIndex = -1;
+            editingArtId = null;
+            markSaved();
+
+            target.postMessage({ type: 'pixel-meow:loaded', token: d.token, frames: n, frameW: fw, frameH: fh }, '*');
+            showToast('맵 메이커에서 "' + (d.name || '이미지') + '"을(를) 불러왔어요');
+          } catch (err) {
+            console.error(err);
+            target.postMessage({ type: 'pixel-meow:load-error', token: d.token, reason: 'exception' }, '*');
+          }
+        };
+        img.onerror = () => target.postMessage({ type: 'pixel-meow:load-error', token: d.token, reason: 'decode' }, '*');
+        img.src = d.png;
+      }
+
       window.addEventListener('message', (e) => {
         if (e.source !== target || !e.data || typeof e.data !== 'object') return;
         if (e.data.type === 'maker:request-export') { sendToMaker({ name: e.data.name, as: e.data.as === 'sprite' ? 'sprite' : 'tile' }); return; }
+        if (e.data.type === 'maker:load-image') { loadFromMaker(e.data); return; }
         if (e.data.type === 'maker:received') showToast('맵 메이커에 가져왔어요 (' + (e.data.name || '') + ')');
+      });
+
+      // 준비 완료 알림 (맵 메이커는 이 신호를 받은 뒤 불러올 이미지를 보냄)
+      window.addEventListener('load', () => {
+        try { target.postMessage({ type: 'pixel-meow:ready', version: 2 }, '*'); } catch (e) {}
       });
     })();
